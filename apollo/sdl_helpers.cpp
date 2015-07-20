@@ -35,7 +35,7 @@ TextureInfo LoadSDLTexture(const string& filename)
 	}
 
 	// copy the pixels into our own buffer and swizzle the pixels into RGBA32
-	auto swizzledPixels = unique_ptr<uint8_t>(new uint8_t[4 * surface->w * surface->h]);
+	auto swizzledPixels = unique_ptr<uint8_t[]>(new uint8_t[4 * surface->w * surface->h]);
 	switch (surface->format->format)
 	{
 	case SDL_PIXELFORMAT_ABGR8888:

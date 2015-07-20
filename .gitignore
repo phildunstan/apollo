@@ -32,3 +32,4 @@
 *.suo
 *.sdf
 x64/
+*.opensdf

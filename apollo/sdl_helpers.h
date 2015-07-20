@@ -5,5 +5,5 @@
 #include <string>
 #include <future>
 
-using TextureInfo = std::tuple<std::unique_ptr<uint8_t>, int, int>;
+using TextureInfo = std::tuple<std::unique_ptr<uint8_t[]>, int, int>;
 TextureInfo LoadSDLTexture(const std::string& filename);

@@ -52,7 +52,7 @@ GLShader LoadShader(GLenum shaderType, const string& filename)
 	return CreateShader(shaderType, ss.str().c_str());
 }
 
-GLProgram CreateProgram(GLuint vertexShader, GLuint fragmentShader)
+GLProgram CreateProgram(GLShader vertexShader, GLShader fragmentShader)
 {
 	auto program = GLProgram(glCreateProgram(), glDeleteProgram);
 	if (program == 0)
@@ -80,6 +80,19 @@ GLProgram CreateProgram(GLuint vertexShader, GLuint fragmentShader)
 	}
 
 	return program;
+}
+
+GLProgram LoadShaders(const std::string & vertexShaderFilename, const std::string & fragmentShaderFilename)
+{
+	auto vertexShader = LoadShader(GL_VERTEX_SHADER, vertexShaderFilename);
+	if (vertexShader == 0)
+		return GLProgram();
+
+	auto fragmentShader = LoadShader(GL_FRAGMENT_SHADER, fragmentShaderFilename);
+	if (fragmentShader == 0)
+		return GLProgram();
+
+	return move(CreateProgram(move(vertexShader), move(fragmentShader)));
 }
 
 bool CheckOpenGLErrors()

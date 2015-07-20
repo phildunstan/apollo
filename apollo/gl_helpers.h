@@ -61,7 +61,8 @@ GLShader LoadShader(GLenum shaderType, const std::string& filename);
 
 typedef GLResource<void(*)(GLuint)> GLProgram;
 
-GLProgram CreateProgram(GLuint vertexShader, GLuint fragmentShader);
+GLProgram CreateProgram(GLShader vertexShader, GLShader fragmentShader);
+GLProgram LoadShaders(const std::string& vertexShaderFilename, const std::string& pixelShaderFilename);
 
 bool CheckOpenGLErrors();
 
