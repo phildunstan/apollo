@@ -26,3 +26,9 @@
 *.exe
 *.out
 *.app
+
+# Visual Studo Files
+*.user
+*.suo
+*.sdf
+x64/

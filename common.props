@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;WIN64;_SCL_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <CompileAsManaged>false</CompileAsManaged>
+      <FloatingPointModel>Strict</FloatingPointModel>
+      <DisableSpecificWarnings>4201;4505;4530</DisableSpecificWarnings>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <EnablePREfast>true</EnablePREfast>
+      <UseFullPaths>true</UseFullPaths>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <TargetMachine>NotSet</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
