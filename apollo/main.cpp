@@ -3,144 +3,29 @@
 #include <cassert>
 #include <memory>
 #include <tuple>
+#include <chrono>
 
 #include "GL/glew.h"
 #include "SDL.h"
-#include "SDL_main.h"
 #include "SDL_image.h"
+#include "SDL_main.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
 
 #include "scope_exit.h"
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
+#include "math_helpers.h"
+#include "Sprite.h"
 
 using namespace std;
-
-using Vector2 = glm::vec2;
-using Vector3 = glm::vec3;
+using namespace std::chrono;
 
 
 
-GLProgram playerShaderProgram;
-struct Sprite
-{
-	GLuint texture = 0;
-	GLuint vertexBuffer = 0;
-	GLuint vertexCount = 0;
-	GLuint indexBuffer = 0;
-	GLuint indexCount = 0;
-};
-
-
-Sprite CreateSprite(const std::string& spriteFilename)
-{
-	Sprite sprite;
-
-	unique_ptr<uint8_t[]> pixels;
-	int w = 0;
-	int h = 0;
-	tie(pixels, w, h) = std::async(LoadSDLTexture, spriteFilename.c_str()).get();
-	glGenTextures(1, &sprite.texture);
-	glBindTexture(GL_TEXTURE_2D, sprite.texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-
-	glGenBuffers(1, &sprite.vertexBuffer);
-	if (sprite.vertexBuffer == 0)
-	{
-		printf("Unable to allocate sprite vertex buffer: %s\n", glewGetErrorString(glGetError()));
-		return Sprite {};
-	}
-	float minX = -w / 2.0f;
-	float maxX = w / 2.0f;
-	float minY = -h / 2.0f;
-	float maxY = h / 2.0f;
-	position_uv_vertex vertices[] =
-	{ { { minX, minY, 0.0f }, { 0.0f, 1.0f } },
-	  { { maxX, minY, 0.0f }, { 1.0f, 1.0f } },
-	  { { maxX, maxY, 0.0f }, { 1.0f, 0.0f } },
-	  { { minX, maxY, 0.0f }, { 0.0f, 0.0f } } };
-	sprite.vertexCount = sizeof(vertices) / sizeof(position_uv_vertex);
-	glBindBuffer(GL_ARRAY_BUFFER, sprite.vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sprite.vertexCount * sizeof(position_uv_vertex), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-	glGenBuffers(1, &sprite.indexBuffer);
-	if (sprite.indexBuffer == 0)
-	{
-		printf("Unable to allocate sprite index buffer: %s\n", glewGetErrorString(glGetError()));
-		return Sprite {};
-	}
-	GLushort indices[] = { 0, 1, 3, 3, 1, 2 };
-	sprite.indexCount = sizeof(indices) / sizeof(GLushort);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sprite.indexCount * sizeof(GLushort), indices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	CheckOpenGLErrors();
-
-	return sprite;
-}
-
-
-void DrawSprite(const Sprite& sprite, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix)
-{
-	glBindBuffer(GL_ARRAY_BUFFER, sprite.vertexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.indexBuffer);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(position_uv_vertex), (void*)offsetof(position_uv_vertex, position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(position_uv_vertex), (void*)offsetof(position_uv_vertex, uv));
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, sprite.texture);
-	auto texUniform = glGetUniformLocation(playerShaderProgram, "s_texture");
-	if (texUniform == -1)
-	{
-		printf("Unable to find uniform s_texture in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniform1i(texUniform, 0);
-
-	auto modelviewUniform = glGetUniformLocation(playerShaderProgram, "u_modelview");
-	if (modelviewUniform == -1)
-	{
-		printf("Unable to find uniform u_modelview in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniformMatrix4fv(modelviewUniform, 1, GL_FALSE, glm::value_ptr(modelviewMatrix));
-
-	auto projectionUniform = glGetUniformLocation(playerShaderProgram, "u_projection");
-	if (projectionUniform == -1)
-	{
-		printf("Unable to find uniform u_projection in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-	glDrawElements(GL_TRIANGLES, sprite.indexCount, GL_UNSIGNED_SHORT, 0);
-
-	glDisableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	CheckOpenGLErrors();
-}
-
-
-
-float playerInputSensitivity = 2.0f;
+float playerMovementSpeed = 2.0f;
+float playerRotationSpeed = 0.2f;
 struct PlayerInput
 {
 	Vector2 movement { 0.0f, 0.0f };
@@ -150,29 +35,84 @@ struct PlayerInput
 PlayerInput playerInput;
 
 
+using ObjectId = uint64_t;
+ObjectId getNextObjectId()
+{
+	static ObjectId objectId = 1;
+	return objectId++;
+}
+
+
 struct RigidBody
 {
-	Vector3 position { 0.0f, 0.0f, 0.0f };
-	Vector3 facing { 0.0f, 1.0f, 0.0f };
+	RigidBody()
+		: objectId { 0 }
+		, position { 0.0f, 0.0f, 0.0f }
+		, facing { 0.0f, 1.0f, 0.0f }
+	{
+	}
+
+	RigidBody(const Vector3& position, const Vector3& facing)
+		: objectId { getNextObjectId() }
+		, position { position }
+		, facing { facing }
+	{
+	}
+
+	RigidBody(RigidBody&& other) noexcept
+		: objectId { other.objectId }
+		, position { other.position }
+		, facing { other.facing }
+	{
+		other.objectId = 0;
+	}
+
+	const RigidBody& operator=(RigidBody&& other)
+	{
+		objectId = other.objectId;
+		other.objectId = 0;
+		position = other.position;
+		facing = other.facing;
+		return *this;
+	}
+
+	RigidBody(const RigidBody&) = delete;
+	RigidBody& operator=(const RigidBody&) = delete;
+
+	ObjectId objectId;
+	Vector3 position;
+	Vector3 facing;
 };
+
 RigidBody player;
 vector<RigidBody> bullets;
+vector<RigidBody> enemies;
 
+
+struct CollisionObject
+{
+	Vector3 aabbMin;
+	Vector3 aabbMax;
+	ObjectId objectId;
+};
+vector<CollisionObject> collisionWorld;
+
+
+GLProgram spriteShaderProgram;
 Sprite playerSprite;
 Sprite bulletSprite;
+Sprite enemySprite;
 
 
-
-
-
-bool LoadResources(SDL_Renderer& renderer)
+bool LoadResources()
 {
-	playerShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
-	if (playerShaderProgram == 0)
+	spriteShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
+	if (spriteShaderProgram == 0)
 		return false;
 
 	playerSprite = CreateSprite("apollo.png");
 	bulletSprite = CreateSprite("bullet.png");
+	enemySprite = CreateSprite("enemy.png");
 
 	return CheckOpenGLErrors();
 }
@@ -181,49 +121,64 @@ bool LoadResources(SDL_Renderer& renderer)
 void InitWorld()
 {
 	bullets.reserve(100);
+	enemies.reserve(100);
+
+	enemies.emplace_back(Vector3(0, 0, 0), Vector3(0, 1, 0));
 }
 
 
 
-void Fire()
+void FireBullet()
 {
 	//if (bullets.size() == bullets.capacity())
 	//{
 	//	// don't allow the vector to reallocate
-	//	// reuse the oldest bullet
+	//	// reuse the oldest enemy
 	//}
 	//else
 	{
-		RigidBody bullet = player;
-		bullets.push_back(bullet);
+		bullets.emplace_back(player.position + player.facing * 16.0f, player.facing);
 	}
 }
 
 
-void UpdateWorld()
+void UpdateWorld(float deltaTime)
 {
-	player.position += Vector3(playerInput.movement, 0.0f) * playerInputSensitivity;
-	if (playerInput.facing.length() > 0.5f)
+	player.position += Vector3(playerInput.movement, 0.0f) * playerMovementSpeed;
+	if (glm::length(playerInput.facing) > 0.8f)
 	{
+		auto playerHeading = atan2f(-player.facing.x, player.facing.y);
 		auto normalizedInput = glm::normalize(playerInput.facing);
-		player.facing = Vector3(normalizedInput, 0.0f);
+		auto desiredHeading = atan2f(-normalizedInput.x, normalizedInput.y);
+		auto delta = desiredHeading - playerHeading;
+		if (delta < -PI)
+		{
+			delta += TWO_PI;
+		}
+		else if (delta > PI)
+		{
+			delta -= TWO_PI;
+		}
+		delta = clamp(delta, -playerRotationSpeed, playerRotationSpeed);
+		auto newHeading = playerHeading + delta;
+
+		player.facing = Vector3(-sin(newHeading), cos(newHeading), 0.0f);
 	}
 
 	if (playerInput.firing)
 	{
-		Fire();
+		FireBullet();
 	}
 
 	for (auto& bullet : bullets)
 	{
-		const float frameTime = 1.0f / 60.0f;
-		const float bulletSpeed = 1200.0f * frameTime;
+		const float bulletSpeed = 1200.0f * deltaTime;
 		bullet.position += bulletSpeed * bullet.facing;
 	}
 }
 
 
-void RenderWorld(SDL_Renderer& renderer)
+void RenderWorld()
 {
 	glClearColor(0, 0, 0.2f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -233,7 +188,7 @@ void RenderWorld(SDL_Renderer& renderer)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUseProgram(playerShaderProgram);
+	glUseProgram(spriteShaderProgram);
 
 	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
 
@@ -243,7 +198,16 @@ void RenderWorld(SDL_Renderer& renderer)
 		modelviewMatrix = glm::translate(modelviewMatrix, bullet.position);
 		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-bullet.facing.x, bullet.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		DrawSprite(bulletSprite, modelviewMatrix, projectionMatrix);
+		DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+	}
+
+	for (const auto& enemy : enemies)
+	{
+		auto modelviewMatrix = glm::mat4();
+		modelviewMatrix = glm::translate(modelviewMatrix, enemy.position);
+		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-enemy.facing.x, enemy.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}
 
 	{
@@ -251,14 +215,14 @@ void RenderWorld(SDL_Renderer& renderer)
 		modelviewMatrix = glm::translate(modelviewMatrix, player.position);
 		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-player.facing.x, player.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		DrawSprite(playerSprite, modelviewMatrix, projectionMatrix);
+		DrawSprite(playerSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}
 
 	CheckOpenGLErrors();
 }
 
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
 	{
@@ -307,13 +271,21 @@ int main(int argc, char** argv)
 
 	glViewport(0, 0, windowWidth, windowHeight);
 
-	if (!LoadResources(*renderer))
+	if (!LoadResources())
 	{
 		return 1;
 	}
 
-	while (true)
+	InitWorld();
+
+	auto lastTime = high_resolution_clock::now();
+
+	for (;;)
 	{
+		auto currentTime = high_resolution_clock::now();
+		auto elapsedTime = duration_cast<duration<float>>(currentTime - lastTime).count();
+		lastTime = currentTime;
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
 		{
@@ -340,9 +312,9 @@ int main(int argc, char** argv)
 		auto joystickRightTrigger = SDL_JoystickGetAxis(joystick.get(), 5) / 32768.0f;
 		playerInput.firing = (joystickRightTrigger > 0.8f);
 
-		UpdateWorld();
+		UpdateWorld(elapsedTime);
 
-		RenderWorld(*renderer);
+		RenderWorld();
 		SDL_GL_SwapWindow(window.get());
 	}
 
