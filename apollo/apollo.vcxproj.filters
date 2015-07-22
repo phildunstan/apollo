@@ -5,6 +5,7 @@
     <ClCompile Include="gl_helpers.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="debug_draw.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
@@ -12,9 +13,12 @@
     <ClInclude Include="sdl_helpers.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="math_helpers.h" />
+    <ClInclude Include="debug_draw.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />
     <None Include="sprite_vs.glsl" />
+    <None Include="debug_vs.glsl" />
+    <None Include="debug_fs.glsl" />
   </ItemGroup>
 </Project>

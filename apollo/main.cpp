@@ -1,4 +1,4 @@
-
+#include <algorithm>
 #include <cstdio>
 #include <cassert>
 #include <memory>
@@ -18,6 +18,7 @@
 #include "sdl_helpers.h"
 #include "math_helpers.h"
 #include "Sprite.h"
+#include "debug_draw.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -45,13 +46,6 @@ ObjectId getNextObjectId()
 
 struct RigidBody
 {
-	RigidBody()
-		: objectId { 0 }
-		, position { 0.0f, 0.0f, 0.0f }
-		, facing { 0.0f, 1.0f, 0.0f }
-	{
-	}
-
 	RigidBody(const Vector3& position, const Vector3& facing)
 		: objectId { getNextObjectId() }
 		, position { position }
@@ -59,6 +53,8 @@ struct RigidBody
 	{
 	}
 
+	// make this class move only
+	RigidBody(const RigidBody&) = delete;
 	RigidBody(RigidBody&& other) noexcept
 		: objectId { other.objectId }
 		, position { other.position }
@@ -67,6 +63,7 @@ struct RigidBody
 		other.objectId = 0;
 	}
 
+	RigidBody& operator=(const RigidBody&) = delete;
 	const RigidBody& operator=(RigidBody&& other)
 	{
 		objectId = other.objectId;
@@ -76,26 +73,41 @@ struct RigidBody
 		return *this;
 	}
 
-	RigidBody(const RigidBody&) = delete;
-	RigidBody& operator=(const RigidBody&) = delete;
-
-	ObjectId objectId;
-	Vector3 position;
-	Vector3 facing;
+	ObjectId objectId { 0 };
+	Vector3 position { 0.0f, 0.0f, 0.0f };
+	Vector3 facing { 0.0f, 1.0f, 0.0f };
 };
 
-RigidBody player;
+RigidBody player {{ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }};
 vector<RigidBody> bullets;
 vector<RigidBody> enemies;
 
 
+const RigidBody* GetRigidBody(ObjectId objectId)
+{
+	if (player.objectId == objectId)
+		return &player;
+	// we could improve this to a binary search if we can guarantee that elements are only added to the RigidBody vectors
+	// in increasing ObjectId order, and that the vectors are never reordered.
+	// auto enemyIter = find_if(begin(enemies), end(enemies), [objectId] (const auto& enemy) { return enemy.objectId == objectId; });
+	auto enemyIter = binary_search(begin(enemies), end(enemies), objectId, [objectId] (const auto& enemy) { return enemy.objectId < objectId; });
+	//if (enemyIter != end(enemies))
+	//	return &*enemyIter;
+	auto bulletIter = find_if(begin(bullets), end(bullets), [objectId] (const auto& bullet) { return bullet.objectId == objectId; });
+	if (bulletIter != end(bullets))
+		return &*bulletIter;
+	return nullptr;
+}
+
+
 struct CollisionObject
 {
+	ObjectId objectId;
+	Vector3 position;
 	Vector3 aabbMin;
 	Vector3 aabbMax;
-	ObjectId objectId;
 };
-vector<CollisionObject> collisionWorld;
+vector<CollisionObject> collisionObjects;
 
 
 GLProgram spriteShaderProgram;
@@ -118,34 +130,33 @@ bool LoadResources()
 }
 
 
+void AddCollisionObject(ObjectId objectId, const Vector3& aabbMin, const Vector3& aabbMax)
+{
+	collisionObjects.push_back(CollisionObject { objectId, aabbMin, aabbMax });
+}
+
+
 void InitWorld()
 {
 	bullets.reserve(100);
 	enemies.reserve(100);
 
-	enemies.emplace_back(Vector3(0, 0, 0), Vector3(0, 1, 0));
+	enemies.emplace_back(Vector3(100.0f, 100.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+	AddCollisionObject(enemies.back().objectId, Vector3 { -8.0f, -8.0f, 0.0f }, Vector3 { 8.0f, 8.0f, 0.0f });
 }
-
 
 
 void FireBullet()
 {
-	//if (bullets.size() == bullets.capacity())
-	//{
-	//	// don't allow the vector to reallocate
-	//	// reuse the oldest enemy
-	//}
-	//else
-	{
-		bullets.emplace_back(player.position + player.facing * 16.0f, player.facing);
-	}
+	bullets.emplace_back(player.position + player.facing * 8.0f, player.facing);
+	AddCollisionObject(bullets.back().objectId, Vector3 { -2.0f, -8.0f, 0.0f }, Vector3 { 2.0f, 8.0f, 0.0f });
 }
 
 
 void UpdateWorld(float deltaTime)
 {
 	player.position += Vector3(playerInput.movement, 0.0f) * playerMovementSpeed;
-	if (glm::length(playerInput.facing) > 0.8f)
+	if (glm::length(playerInput.facing) > 0.5f)
 	{
 		auto playerHeading = atan2f(-player.facing.x, player.facing.y);
 		auto normalizedInput = glm::normalize(playerInput.facing);
@@ -175,6 +186,14 @@ void UpdateWorld(float deltaTime)
 		const float bulletSpeed = 1200.0f * deltaTime;
 		bullet.position += bulletSpeed * bullet.facing;
 	}
+
+
+	// update the collision world
+	for (auto& collisionObject : collisionObjects)
+	{
+		const auto* rigidBody = GetRigidBody(collisionObject.objectId);
+		collisionObject.position = rigidBody->position;
+	}
 }
 
 
@@ -192,31 +211,45 @@ void RenderWorld()
 
 	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
 
-	for (const auto& bullet : bullets)
+	//for (const auto& bullet : bullets)
+	//{
+	//	auto modelviewMatrix = glm::mat4();
+	//	modelviewMatrix = glm::translate(modelviewMatrix, bullet.position);
+	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-bullet.facing.x, bullet.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	//	DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+	//}
+
+	//for (const auto& enemy : enemies)
+	//{
+	//	auto modelviewMatrix = glm::mat4();
+	//	modelviewMatrix = glm::translate(modelviewMatrix, enemy.position);
+	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-enemy.facing.x, enemy.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	//	DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+	//}
+
 	{
-		auto modelviewMatrix = glm::mat4();
-		modelviewMatrix = glm::translate(modelviewMatrix, bullet.position);
-		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-bullet.facing.x, bullet.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
+	//	auto modelviewMatrix = glm::mat4();
+	//	modelviewMatrix = glm::translate(modelviewMatrix, player.position);
+	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-player.facing.x, player.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	}
-
-	for (const auto& enemy : enemies)
-	{
-		auto modelviewMatrix = glm::mat4();
-		modelviewMatrix = glm::translate(modelviewMatrix, enemy.position);
-		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-enemy.facing.x, enemy.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	}
-
-	{
-		auto modelviewMatrix = glm::mat4();
-		modelviewMatrix = glm::translate(modelviewMatrix, player.position);
-		modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-player.facing.x, player.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
-
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(playerSprite, player.position, player.facing);
 		DrawSprite(playerSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}
+
+
+	// draw the collision world
+	for (const auto& collisionObject : collisionObjects)
+	{
+		auto min = collisionObject.aabbMin;
+		auto max = collisionObject.aabbMax;
+		DebugDrawLine({ min.x, min.y, 0.0f }, { min.x, max.y, 0.0f }, Color::Yellow);
+		DebugDrawLine({ min.x, max.y, 0.0f }, { max.x, max.y, 0.0f }, Color::Yellow);
+		DebugDrawLine({ max.x, max.y, 0.0f }, { max.x, min.y, 0.0f }, Color::Yellow);
+		DebugDrawLine({ max.x, min.y, 0.0f }, { min.x, min.y, 0.0f }, Color::Yellow);
+	}
+	DebugDrawRender(projectionMatrix);
 
 	CheckOpenGLErrors();
 }
@@ -276,6 +309,9 @@ int main(int /*argc*/, char** /*argv*/)
 		return 1;
 	}
 
+	DebugDrawInit();
+	auto debugDrawCleanup = make_scope_exit([] () { DebugDrawShutdown(); });
+
 	InitWorld();
 
 	auto lastTime = high_resolution_clock::now();
@@ -310,7 +346,7 @@ int main(int /*argc*/, char** /*argv*/)
 		playerInput.facing = Vector2(joystickFacingX, joystickFacingY);
 
 		auto joystickRightTrigger = SDL_JoystickGetAxis(joystick.get(), 5) / 32768.0f;
-		playerInput.firing = (joystickRightTrigger > 0.8f);
+		playerInput.firing = (joystickRightTrigger > -0.5f);
 
 		UpdateWorld(elapsedTime);
 

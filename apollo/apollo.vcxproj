@@ -73,6 +73,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
     </Link>
     <ClCompile />
     <ClCompile />
@@ -92,12 +93,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="debug_draw.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="gl_helpers.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="Sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="debug_draw.h" />
     <ClInclude Include="gl_helpers.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="scope_exit.h" />
@@ -105,6 +108,8 @@
     <ClInclude Include="Sprite.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="debug_fs.glsl" />
+    <None Include="debug_vs.glsl" />
     <None Include="sprite_vs.glsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>

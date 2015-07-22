@@ -4,6 +4,7 @@
 #include <future>
 
 #include "glm/gtc/type_ptr.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "SDL.h"
 #include "SDL_image.h"
@@ -21,13 +22,14 @@ Sprite CreateSprite(const std::string& spriteFilename)
 	int w = 0;
 	int h = 0;
 	tie(pixels, w, h) = std::async(LoadSDLTexture, spriteFilename.c_str()).get();
+	sprite.dimensions = Vector2(w, h);
 	glGenTextures(1, &sprite.texture);
 	glBindTexture(GL_TEXTURE_2D, sprite.texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
@@ -114,4 +116,18 @@ void DrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4&
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	CheckOpenGLErrors();
+}
+
+glm::mat4 CreateSpriteModelviewMatrix(const Sprite& /*sprite*/, const Vector3& position, const Vector3& facing)
+{
+	auto y = glm::normalize(facing);
+	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+	auto x = glm::normalize(glm::cross(y, z));
+	auto modelviewMatrix = glm::mat4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(z, 0.0f), glm::vec4(position, 1.0f));
+	return modelviewMatrix;
+}
+
+glm::mat4 CreateSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing)
+{
+	return CreateSpriteModelviewMatrix(sprite, position - facing / 2.0f, facing);
 }
