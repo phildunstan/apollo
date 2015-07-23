@@ -78,7 +78,7 @@ struct RigidBody
 	Vector3 facing { 0.0f, 1.0f, 0.0f };
 };
 
-RigidBody player {{ 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }};
+RigidBody player { { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } };
 vector<RigidBody> bullets;
 vector<RigidBody> enemies;
 
@@ -87,14 +87,13 @@ const RigidBody* GetRigidBody(ObjectId objectId)
 {
 	if (player.objectId == objectId)
 		return &player;
-	// we could improve this to a binary search if we can guarantee that elements are only added to the RigidBody vectors
+	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
 	// in increasing ObjectId order, and that the vectors are never reordered.
-	// auto enemyIter = find_if(begin(enemies), end(enemies), [objectId] (const auto& enemy) { return enemy.objectId == objectId; });
-	auto enemyIter = binary_search(begin(enemies), end(enemies), objectId, [objectId] (const auto& enemy) { return enemy.objectId < objectId; });
-	//if (enemyIter != end(enemies))
-	//	return &*enemyIter;
-	auto bulletIter = find_if(begin(bullets), end(bullets), [objectId] (const auto& bullet) { return bullet.objectId == objectId; });
-	if (bulletIter != end(bullets))
+	auto enemyIter = lower_bound(begin(enemies), end(enemies), objectId, [] (const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
+	if ((enemyIter != end(enemies)) && (enemyIter->objectId == objectId))
+		return &*enemyIter;
+	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [] (const auto& bullet, auto objectId) { return bullet.objectId < objectId; });
+	if ((bulletIter != end(bullets)) && (bulletIter->objectId == objectId))
 		return &*bulletIter;
 	return nullptr;
 }
@@ -102,12 +101,37 @@ const RigidBody* GetRigidBody(ObjectId objectId)
 
 struct CollisionObject
 {
+	CollisionObject(ObjectId _objectId, const Vector3& _aabbDimensions)
+		: objectId(_objectId)
+		, aabbDimensions(_aabbDimensions)
+		, position({ 0.0f, 0.0f, 0.0f })
+		, facing({ 0.0f, 1.0f, 0.0f })
+	{
+	}
+
 	ObjectId objectId;
+	Vector3 aabbDimensions;
 	Vector3 position;
-	Vector3 aabbMin;
-	Vector3 aabbMax;
+	Vector3 facing;
 };
 vector<CollisionObject> collisionObjects;
+
+
+bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObject& objectB)
+{
+	auto objectATransform = CalculateObjectTransform(objectA.position, objectA.facing);
+	auto objectBTransform = CalculateObjectTransform(objectB.position, objectB.facing);
+	auto transform = glm::inverse(objectBTransform) * objectATransform;
+	auto a = glm::vec2 { -objectA.aabbDimensions.x / 2.0f, -objectA.aabbDimensions.y / 2.0f };
+	auto b = glm::vec2 { -objectA.aabbDimensions.x / 2.0f,  objectA.aabbDimensions.y / 2.0f };
+	auto c = glm::vec2 {  objectA.aabbDimensions.x / 2.0f,  objectA.aabbDimensions.y / 2.0f };
+	auto d = glm::vec2 {  objectA.aabbDimensions.x / 2.0f, -objectA.aabbDimensions.y / 2.0f };
+	auto _a = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
+	auto _b = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
+	auto _c = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
+	auto _d = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
+	return false;
+}
 
 
 GLProgram spriteShaderProgram;
@@ -130,26 +154,28 @@ bool LoadResources()
 }
 
 
-void AddCollisionObject(ObjectId objectId, const Vector3& aabbMin, const Vector3& aabbMax)
+void AddCollisionObject(ObjectId objectId, const Vector3& aabbDimensions)
 {
-	collisionObjects.push_back(CollisionObject { objectId, aabbMin, aabbMax });
+	collisionObjects.push_back(CollisionObject { objectId, aabbDimensions });
 }
 
 
 void InitWorld()
 {
+	AddCollisionObject(player.objectId, Vector3 { 32.0f, 32.0f, 0.0f } );
+
 	bullets.reserve(100);
 	enemies.reserve(100);
 
 	enemies.emplace_back(Vector3(100.0f, 100.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
-	AddCollisionObject(enemies.back().objectId, Vector3 { -8.0f, -8.0f, 0.0f }, Vector3 { 8.0f, 8.0f, 0.0f });
+	AddCollisionObject(enemies.back().objectId, Vector3 { 32.0f, 32.0f, 0.0f });
 }
 
 
 void FireBullet()
 {
 	bullets.emplace_back(player.position + player.facing * 8.0f, player.facing);
-	AddCollisionObject(bullets.back().objectId, Vector3 { -2.0f, -8.0f, 0.0f }, Vector3 { 2.0f, 8.0f, 0.0f });
+	AddCollisionObject(bullets.back().objectId, Vector3 { 2.0f, 12.0f, 0.0f });
 }
 
 
@@ -192,7 +218,21 @@ void UpdateWorld(float deltaTime)
 	for (auto& collisionObject : collisionObjects)
 	{
 		const auto* rigidBody = GetRigidBody(collisionObject.objectId);
+		assert(rigidBody);
 		collisionObject.position = rigidBody->position;
+		collisionObject.facing = rigidBody->facing;
+	}
+
+	// bounding box test between every collision object
+	for (int i = 0; i < collisionObjects.size(); ++i)
+	{
+		for (int j = i + 1; j < collisionObjects.size(); ++j)
+		{
+			if (CollisionObjectsCollide(collisionObjects[i], collisionObjects[j]))
+			{
+				// something
+			}
+		}
 	}
 }
 
@@ -211,29 +251,19 @@ void RenderWorld()
 
 	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
 
-	//for (const auto& bullet : bullets)
-	//{
-	//	auto modelviewMatrix = glm::mat4();
-	//	modelviewMatrix = glm::translate(modelviewMatrix, bullet.position);
-	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-bullet.facing.x, bullet.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
+	for (const auto& bullet : bullets)
+	{
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bullet.position, bullet.facing);
+		DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+	}
 
-	//	DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	//}
-
-	//for (const auto& enemy : enemies)
-	//{
-	//	auto modelviewMatrix = glm::mat4();
-	//	modelviewMatrix = glm::translate(modelviewMatrix, enemy.position);
-	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-enemy.facing.x, enemy.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	//	DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	//}
+	for (const auto& enemy : enemies)
+	{
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemy.position, enemy.facing);
+		DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+	}
 
 	{
-	//	auto modelviewMatrix = glm::mat4();
-	//	modelviewMatrix = glm::translate(modelviewMatrix, player.position);
-	//	modelviewMatrix = glm::rotate(modelviewMatrix, atan2f(-player.facing.x, player.facing.y), glm::vec3(0.0f, 0.0f, 1.0f));
-
 		auto modelviewMatrix = CreateSpriteModelviewMatrix(playerSprite, player.position, player.facing);
 		DrawSprite(playerSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}
@@ -242,12 +272,10 @@ void RenderWorld()
 	// draw the collision world
 	for (const auto& collisionObject : collisionObjects)
 	{
-		auto min = collisionObject.aabbMin;
-		auto max = collisionObject.aabbMax;
-		DebugDrawLine({ min.x, min.y, 0.0f }, { min.x, max.y, 0.0f }, Color::Yellow);
-		DebugDrawLine({ min.x, max.y, 0.0f }, { max.x, max.y, 0.0f }, Color::Yellow);
-		DebugDrawLine({ max.x, max.y, 0.0f }, { max.x, min.y, 0.0f }, Color::Yellow);
-		DebugDrawLine({ max.x, min.y, 0.0f }, { min.x, min.y, 0.0f }, Color::Yellow);
+		auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
+		float w = collisionObject.aabbDimensions.x;
+		float h = collisionObject.aabbDimensions.y;
+		DebugDrawBox(transform, w, h, Color::Yellow);
 	}
 	DebugDrawRender(projectionMatrix);
 
@@ -339,7 +367,15 @@ int main(int /*argc*/, char** /*argv*/)
 		}
 		auto joystickMovementX = SDL_JoystickGetAxis(joystick.get(), 0) / 32768.0f;
 		auto joystickMovementY = -SDL_JoystickGetAxis(joystick.get(), 1) / 32768.0f;
-		playerInput.movement = Vector2(joystickMovementX, joystickMovementY);
+		auto movementInput = Vector2(joystickMovementX, joystickMovementY);
+		if (glm::length(movementInput) > 0.2f)
+		{
+			playerInput.movement = movementInput;
+		}
+		else
+		{
+			playerInput.movement = Vector2(0.0f, 0.0f);
+		}
 
 		auto joystickFacingX = SDL_JoystickGetAxis(joystick.get(), 2) / 32768.0f;
 		auto joystickFacingY = -SDL_JoystickGetAxis(joystick.get(), 3) / 32768.0f;

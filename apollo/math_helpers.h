@@ -6,6 +6,8 @@
 using Vector2 = glm::vec2;
 using Vector3 = glm::vec3;
 
+using Matrix4x4 = glm::mat4;
+
 constexpr float pi_internal()
 {
 	return 3.14159265358979323846264338327950288f;
@@ -22,3 +24,14 @@ constexpr T clamp(T x, T minValue, T maxValue)
 {
 	return std::min(maxValue, std::max(x, minValue));
 }
+
+
+inline Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3& facing)
+{
+	auto y = facing;
+	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+	auto x = glm::cross(y, z);
+	auto transform = Matrix4x4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(y, 0.0f), glm::vec4(position, 1.0f));
+	return transform;
+}
+

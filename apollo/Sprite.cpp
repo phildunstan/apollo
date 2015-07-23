@@ -120,11 +120,7 @@ void DrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4&
 
 glm::mat4 CreateSpriteModelviewMatrix(const Sprite& /*sprite*/, const Vector3& position, const Vector3& facing)
 {
-	auto y = glm::normalize(facing);
-	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
-	auto x = glm::normalize(glm::cross(y, z));
-	auto modelviewMatrix = glm::mat4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(z, 0.0f), glm::vec4(position, 1.0f));
-	return modelviewMatrix;
+	return CalculateObjectTransform(position, facing);
 }
 
 glm::mat4 CreateSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing)
