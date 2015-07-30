@@ -4,6 +4,7 @@
 #include <memory>
 #include <tuple>
 #include <chrono>
+#include <unordered_set>
 
 #include "GL/glew.h"
 #include "SDL.h"
@@ -44,58 +45,61 @@ ObjectId getNextObjectId()
 }
 
 
-struct RigidBody
+struct GameObject
 {
-	RigidBody(const Vector3& position, const Vector3& facing)
+	GameObject()
 		: objectId { getNextObjectId() }
-		, position { position }
-		, facing { facing }
+		, isAlive { true }
 	{
 	}
 
-	// make this class move only
-	RigidBody(const RigidBody&) = delete;
-	RigidBody(RigidBody&& other) noexcept
-		: objectId { other.objectId }
-		, position { other.position }
-		, facing { other.facing }
-	{
-		other.objectId = 0;
-	}
-
-	RigidBody& operator=(const RigidBody&) = delete;
-	const RigidBody& operator=(RigidBody&& other)
-	{
-		objectId = other.objectId;
-		other.objectId = 0;
-		position = other.position;
-		facing = other.facing;
-		return *this;
-	}
-
-	ObjectId objectId { 0 };
-	Vector3 position { 0.0f, 0.0f, 0.0f };
-	Vector3 facing { 0.0f, 1.0f, 0.0f };
+	ObjectId objectId;
+	bool isAlive;
 };
 
-RigidBody player { { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } };
-vector<RigidBody> bullets;
-vector<RigidBody> enemies;
+GameObject player;
+vector<GameObject> bullets;
+vector<GameObject> enemies;
 
-
-const RigidBody* GetRigidBody(ObjectId objectId)
+GameObject& GetGameObject(ObjectId objectId)
 {
 	if (player.objectId == objectId)
-		return &player;
+		return player;
 	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
 	// in increasing ObjectId order, and that the vectors are never reordered.
-	auto enemyIter = lower_bound(begin(enemies), end(enemies), objectId, [] (const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
+	auto enemyIter = lower_bound(begin(enemies), end(enemies), objectId, [](const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
 	if ((enemyIter != end(enemies)) && (enemyIter->objectId == objectId))
-		return &*enemyIter;
-	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [] (const auto& bullet, auto objectId) { return bullet.objectId < objectId; });
-	if ((bulletIter != end(bullets)) && (bulletIter->objectId == objectId))
-		return &*bulletIter;
-	return nullptr;
+		return *enemyIter;
+	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [](const auto& bullet, auto objectId) { return bullet.objectId < objectId; });
+	assert((bulletIter != end(bullets)) && (bulletIter->objectId == objectId));
+	return *bulletIter;
+}
+
+
+struct RigidBody
+{
+	RigidBody(ObjectId _objectId, const Vector3& _position, const Vector3& _facing)
+		: objectId { _objectId }
+		, position { _position }
+		, facing { _facing }
+	{
+		assert(IsUnitLength(facing));
+	}
+
+	ObjectId objectId;
+	Vector3 position;
+	Vector3 facing;
+};
+
+vector<RigidBody> rigidBodies;
+
+RigidBody& GetRigidBody(ObjectId objectId)
+{
+	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
+	// in increasing ObjectId order, and that the vectors are never reordered.
+	auto rigidBodyIter = lower_bound(begin(rigidBodies), end(rigidBodies), objectId, [] (const auto& rigidBody, auto objectId) { return rigidBody.objectId < objectId; });
+	assert((rigidBodyIter != end(rigidBodies)) && (rigidBodyIter->objectId == objectId));
+	return *rigidBodyIter;
 }
 
 
@@ -114,24 +118,69 @@ struct CollisionObject
 	Vector3 position;
 	Vector3 facing;
 };
+
 vector<CollisionObject> collisionObjects;
 
+vector<Vector3> GatherObjectVertices(const CollisionObject& object)
+{
+	Vector3 yAxis = object.facing;
+	Vector3 xAxis = PerpendicularVector2D(yAxis);
+	Vector3 halfDimensions = 0.5f * object.aabbDimensions;
+	vector<Vector3> vertices{
+		object.position - halfDimensions.x * xAxis - halfDimensions.y * yAxis,
+		object.position + halfDimensions.x * xAxis - halfDimensions.y * yAxis,
+		object.position - halfDimensions.x * xAxis + halfDimensions.y * yAxis,
+		object.position + halfDimensions.x * xAxis + halfDimensions.y * yAxis };
+	return vertices;
+}
 
 bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObject& objectB)
 {
-	auto objectATransform = CalculateObjectTransform(objectA.position, objectA.facing);
-	auto objectBTransform = CalculateObjectTransform(objectB.position, objectB.facing);
-	auto transform = glm::inverse(objectBTransform) * objectATransform;
-	auto a = glm::vec2 { -objectA.aabbDimensions.x / 2.0f, -objectA.aabbDimensions.y / 2.0f };
-	auto b = glm::vec2 { -objectA.aabbDimensions.x / 2.0f,  objectA.aabbDimensions.y / 2.0f };
-	auto c = glm::vec2 {  objectA.aabbDimensions.x / 2.0f,  objectA.aabbDimensions.y / 2.0f };
-	auto d = glm::vec2 {  objectA.aabbDimensions.x / 2.0f, -objectA.aabbDimensions.y / 2.0f };
-	auto _a = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
-	auto _b = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
-	auto _c = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
-	auto _d = glm::vec2 { transform * glm::vec4 { a, 0.0f, 1.0f} };
-	return false;
+	// use the Separating Axis Theorem to check for collision
+
+	// collect the vertices for objects A and B
+	vector<Vector3> objectAVertices = GatherObjectVertices(objectA);
+	vector<Vector3> objectBVertices = GatherObjectVertices(objectB);
+
+	// collect the normal vectors for each edge in objects A and B
+	vector<Vector3> edgeNormals;
+	edgeNormals.reserve(4);
+	assert(IsUnitLength(objectA.facing));
+	edgeNormals.push_back(objectA.facing);
+	edgeNormals.push_back(PerpendicularVector2D(objectA.facing));
+	assert(IsUnitLength(objectB.facing));
+	edgeNormals.push_back(objectB.facing);
+	edgeNormals.push_back(PerpendicularVector2D(objectB.facing));
+
+	for (const auto& edgeNormal : edgeNormals)
+	{
+		// find the intervals containing all of the vertices in objects A and B respectively projected edge normals
+		// if the intervals don't overlap then there is no overlap between the objects
+		float objectAMin = FLT_MAX;
+		float objectAMax = -FLT_MAX;
+		for_each(begin(objectAVertices), end(objectAVertices), [&] (const auto& vertex) {
+			float p = glm::dot(vertex, edgeNormal);
+			objectAMin = min(p, objectAMin);
+			objectAMax = max(p, objectAMax);
+		});
+
+		float objectBMin = FLT_MAX;
+		float objectBMax = -FLT_MAX;
+		for_each(begin(objectBVertices), end(objectBVertices), [&] (const auto& vertex) {
+			float p = glm::dot(vertex, edgeNormal);
+			objectBMin = min(p, objectBMin);
+			objectBMax = max(p, objectBMax);
+		});
+
+		if ((objectAMin > objectBMax) || (objectBMin > objectAMax))
+			return false;
+	}
+
+	return true;
 }
+
+
+
 
 
 GLProgram spriteShaderProgram;
@@ -154,6 +203,11 @@ bool LoadResources()
 }
 
 
+void AddRigidBody(ObjectId objectId, const Vector3& position, const Vector3& facing)
+{
+	rigidBodies.push_back(RigidBody { objectId, position, facing });
+}
+
 void AddCollisionObject(ObjectId objectId, const Vector3& aabbDimensions)
 {
 	collisionObjects.push_back(CollisionObject { objectId, aabbDimensions });
@@ -162,29 +216,35 @@ void AddCollisionObject(ObjectId objectId, const Vector3& aabbDimensions)
 
 void InitWorld()
 {
+	assert(player.objectId != 0);
+	AddRigidBody(player.objectId, Vector3{ 50.0f, 20.0f, 0.0f }, Vector3{ 1.0f, 0.0f, 0.0f });
 	AddCollisionObject(player.objectId, Vector3 { 32.0f, 32.0f, 0.0f } );
 
 	bullets.reserve(100);
 	enemies.reserve(100);
 
-	enemies.emplace_back(Vector3(100.0f, 100.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+	enemies.emplace_back();
+	AddRigidBody(enemies.back().objectId, Vector3{ 100.0f, 100.0f, 0.0f }, glm::normalize(Vector3{ 1.0f, 1.0f, 0.0f }));
 	AddCollisionObject(enemies.back().objectId, Vector3 { 32.0f, 32.0f, 0.0f });
 }
 
 
 void FireBullet()
 {
-	bullets.emplace_back(player.position + player.facing * 8.0f, player.facing);
+	const auto& playerRB = GetRigidBody(player.objectId);		
+	bullets.emplace_back();
+	AddRigidBody(bullets.back().objectId, playerRB.position + playerRB.facing * 8.0f, playerRB.facing);
 	AddCollisionObject(bullets.back().objectId, Vector3 { 2.0f, 12.0f, 0.0f });
 }
 
 
 void UpdateWorld(float deltaTime)
 {
-	player.position += Vector3(playerInput.movement, 0.0f) * playerMovementSpeed;
+	auto& playerRB = GetRigidBody(player.objectId);
+	playerRB.position += Vector3(playerInput.movement, 0.0f) * playerMovementSpeed;
 	if (glm::length(playerInput.facing) > 0.5f)
 	{
-		auto playerHeading = atan2f(-player.facing.x, player.facing.y);
+		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
 		auto normalizedInput = glm::normalize(playerInput.facing);
 		auto desiredHeading = atan2f(-normalizedInput.x, normalizedInput.y);
 		auto delta = desiredHeading - playerHeading;
@@ -199,7 +259,7 @@ void UpdateWorld(float deltaTime)
 		delta = clamp(delta, -playerRotationSpeed, playerRotationSpeed);
 		auto newHeading = playerHeading + delta;
 
-		player.facing = Vector3(-sin(newHeading), cos(newHeading), 0.0f);
+		playerRB.facing = Vector3(-sin(newHeading), cos(newHeading), 0.0f);
 	}
 
 	if (playerInput.firing)
@@ -207,33 +267,41 @@ void UpdateWorld(float deltaTime)
 		FireBullet();
 	}
 
-	for (auto& bullet : bullets)
+	for_each(begin(bullets), end(bullets), [deltaTime](auto& bullet)
 	{
 		const float bulletSpeed = 1200.0f * deltaTime;
-		bullet.position += bulletSpeed * bullet.facing;
-	}
-
+		auto& bulletRB = GetRigidBody(bullet.objectId);
+		bulletRB.position += bulletSpeed * bulletRB.facing;
+	});
 
 	// update the collision world
-	for (auto& collisionObject : collisionObjects)
+	for_each(begin(collisionObjects), end(collisionObjects), [] (auto& collisionObject)
 	{
-		const auto* rigidBody = GetRigidBody(collisionObject.objectId);
-		assert(rigidBody);
-		collisionObject.position = rigidBody->position;
-		collisionObject.facing = rigidBody->facing;
-	}
+		const auto& rigidBody = GetRigidBody(collisionObject.objectId);
+		collisionObject.position = rigidBody.position;
+		collisionObject.facing = rigidBody.facing;
+	});
 
-	// bounding box test between every collision object
+	// collision tests between every collision object
+	unordered_set<ObjectId> collidingObjects;
+
 	for (int i = 0; i < collisionObjects.size(); ++i)
 	{
 		for (int j = i + 1; j < collisionObjects.size(); ++j)
 		{
 			if (CollisionObjectsCollide(collisionObjects[i], collisionObjects[j]))
 			{
-				// something
+				collidingObjects.insert(collisionObjects[i].objectId);
+				collidingObjects.insert(collisionObjects[j].objectId);
 			}
 		}
 	}
+
+	player.isAlive = (collidingObjects.find(player.objectId) == collidingObjects.end());
+	for (auto& enemy : enemies)
+		enemy.isAlive = (collidingObjects.find(enemy.objectId) == collidingObjects.end());
+	for (auto& bullet : bullets)
+		bullet.isAlive = (collidingObjects.find(bullet.objectId) == collidingObjects.end());
 }
 
 
@@ -251,32 +319,40 @@ void RenderWorld()
 
 	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
 
-	for (const auto& bullet : bullets)
+	// draw the bullets
+	for_each(begin(bullets), end(bullets), [&projectionMatrix](const auto& bullet)
 	{
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bullet.position, bullet.facing);
+		auto& bulletRB = GetRigidBody(bullet.objectId);
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bulletRB.position, bulletRB.facing);
 		DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	}
+	});
 
-	for (const auto& enemy : enemies)
+	// draw the enemies
+	for_each(begin(enemies), end(enemies), [&projectionMatrix](const auto& enemy)
 	{
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemy.position, enemy.facing);
+		auto& enemyRB = GetRigidBody(enemy.objectId);
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemyRB.position, enemyRB.facing);
 		DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	}
+	});
 
+	// draw the player
 	{
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(playerSprite, player.position, player.facing);
+		auto& playerRB = GetRigidBody(player.objectId);
+		auto modelviewMatrix = CreateSpriteModelviewMatrix(playerSprite, playerRB.position, playerRB.facing);
 		DrawSprite(playerSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}
 
-
 	// draw the collision world
-	for (const auto& collisionObject : collisionObjects)
+	for_each(begin(collisionObjects), end(collisionObjects), [](const auto& collisionObject)
 	{
+		auto& gameObject = GetGameObject(collisionObject.objectId);
 		auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
 		float w = collisionObject.aabbDimensions.x;
 		float h = collisionObject.aabbDimensions.y;
-		DebugDrawBox(transform, w, h, Color::Yellow);
-	}
+		auto color = gameObject.isAlive ? Color::White : Color::Gray;
+		DebugDrawBox(transform, w, h, color);
+	});
+
 	DebugDrawRender(projectionMatrix);
 
 	CheckOpenGLErrors();
@@ -300,7 +376,7 @@ int main(int /*argc*/, char** /*argv*/)
 	}
 	auto sdlImageQuiter = make_scope_exit(IMG_Quit);
 
-	auto joystick = unique_ptr<SDL_Joystick, void(__cdecl *)(SDL_Joystick*)>(SDL_JoystickOpen(0), SDL_JoystickClose);
+	auto joystick = unique_ptr<SDL_Joystick, decltype(&SDL_JoystickClose)>(SDL_JoystickOpen(0), SDL_JoystickClose);
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -315,7 +391,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 	int windowWidth = 640;
 	int windowHeight = 480;
-	auto window = unique_ptr<SDL_Window, void (__cdecl*)(SDL_Window*)>(SDL_CreateWindow("apollo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), &SDL_DestroyWindow);
+	auto window = unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(SDL_CreateWindow("apollo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 	if (!window)
 	{
 		printf("Unable to create SDL window: %s\n", SDL_GetError());
@@ -323,7 +399,7 @@ int main(int /*argc*/, char** /*argv*/)
 		return 1;
 	}
 
-	auto renderer = unique_ptr<SDL_Renderer, void (__cdecl*)(SDL_Renderer*)>(SDL_CreateRenderer(window.get(), -1, 0), SDL_DestroyRenderer);
+	auto renderer = unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)>(SDL_CreateRenderer(window.get(), -1, 0), SDL_DestroyRenderer);
 
 	auto glContext = SDL_GL_CreateContext(window.get());
 	auto glContextDeleter = make_scope_exit([&glContext] () { SDL_GL_DeleteContext(glContext); });

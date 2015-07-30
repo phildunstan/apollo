@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "glm/glm.hpp"
 #include "glm/gtc/constants.hpp"
 
@@ -26,6 +27,17 @@ constexpr T clamp(T x, T minValue, T maxValue)
 }
 
 
+inline bool IsSimilar(float x, float y, float epsilon = 1e-5f)
+{
+	return std::abs(x - y) <= epsilon;
+}
+
+template <typename VectorT>
+inline bool IsUnitLength(const VectorT& v, float epsilon = 1e-5f)
+{
+	return IsSimilar(glm::length(v), 1.0f, epsilon);
+}
+
 inline Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3& facing)
 {
 	auto y = facing;
@@ -34,4 +46,12 @@ inline Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3
 	auto transform = Matrix4x4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(y, 0.0f), glm::vec4(position, 1.0f));
 	return transform;
 }
+
+
+inline Vector3 PerpendicularVector2D(const Vector3& v)
+{
+	return Vector3{ v.y, -v.x, v.z };
+}
+
+
 

@@ -22,7 +22,7 @@ void CopyAndSwizzlePixels(const uint8_t* src, int w, int h, uint8_t* dst, Swizzl
 
 TextureInfo LoadSDLTexture(const string& filename)
 {
-	auto surface = unique_ptr<SDL_Surface, void(*)(SDL_Surface*)>(IMG_Load(filename.c_str()), SDL_FreeSurface);
+	auto surface = unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load(filename.c_str()), SDL_FreeSurface);
 	if (!surface)
 	{
 		printf("Unable to load the SDL Surface from %s: %s\n", filename.c_str(), IMG_GetError());
@@ -34,7 +34,7 @@ TextureInfo LoadSDLTexture(const string& filename)
 		printf("Unable to lock the SDL Surface: %s\n", SDL_GetError());
 	}
 
-	// copy the pixels into our own buffer and swizzle the pixels into RGBA32
+	// copy the pixels into our own buffer and swizzle the pixels into RGBA8888
 	auto swizzledPixels = unique_ptr<uint8_t[]>(new uint8_t[4 * surface->w * surface->h]);
 	switch (surface->format->format)
 	{
@@ -42,11 +42,6 @@ TextureInfo LoadSDLTexture(const string& filename)
 		CopyAndSwizzlePixels(static_cast<uint8_t*>(surface->pixels), surface->w, surface->h, swizzledPixels.get(), [] (const uint8_t* srcPixel, uint8_t* dstPixel)
 		{
 			// Not sure what is happening here, but the pixel data is not coming in as ABGR8888, It appears to be RBGA8888
-			//dstPixel[0] = srcPixel[3];
-			//dstPixel[1] = srcPixel[2];
-			//dstPixel[2] = srcPixel[1];
-			//dstPixel[3] = srcPixel[0];
-
 			dstPixel[0] = srcPixel[0];
 			dstPixel[1] = srcPixel[1];
 			dstPixel[2] = srcPixel[2];
