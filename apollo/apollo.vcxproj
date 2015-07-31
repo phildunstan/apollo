@@ -96,8 +96,10 @@
     <ClCompile Include="debug_draw.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="gl_helpers.cpp" />
+    <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="debug_draw.h" />
@@ -106,6 +108,7 @@
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="sdl_helpers.h" />
     <ClInclude Include="Sprite.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="debug_fs.glsl" />

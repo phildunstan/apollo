@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <random>
 #include "glm/glm.hpp"
 #include "glm/gtc/constants.hpp"
 
@@ -47,11 +48,29 @@ inline Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3
 	return transform;
 }
 
+inline Matrix4x4 CalculateObjectTransform(const Vector2& position, const Vector2& facing)
+{
+	auto y = glm::vec3(facing, 0.0f);
+	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+	auto x = glm::cross(y, z);
+	auto transform = Matrix4x4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(y, 0.0f), glm::vec4(position, 0.0f, 1.0f));
+	return transform;
+}
+
 
 inline Vector3 PerpendicularVector2D(const Vector3& v)
 {
 	return Vector3{ v.y, -v.x, v.z };
 }
 
+inline Vector2 PerpendicularVector2D(const Vector2& v)
+{
+	return Vector2 { v.y, -v.x};
+}
 
+
+void SeedRandom(uint64_t seed);
+float GetRandomFloat01();
+Vector2 GetRandomVectorOnCircle();
+Vector2 GetRandomVectorInBox(const Vector2& min, const Vector2& max);
 

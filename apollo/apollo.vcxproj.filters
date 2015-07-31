@@ -6,6 +6,8 @@
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="debug_draw.cpp" />
+    <ClCompile Include="World.cpp" />
+    <ClCompile Include="math_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
@@ -14,6 +16,7 @@
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="debug_draw.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />

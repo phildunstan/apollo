@@ -123,6 +123,11 @@ glm::mat4 CreateSpriteModelviewMatrix(const Sprite& /*sprite*/, const Vector3& p
 	return CalculateObjectTransform(position, facing);
 }
 
+glm::mat4 CreateSpriteModelviewMatrix(const Sprite& /*sprite*/, const Vector2& position, const Vector2& facing)
+{
+	return CalculateObjectTransform(position, facing);
+}
+
 glm::mat4 CreateSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing)
 {
 	return CreateSpriteModelviewMatrix(sprite, position - facing / 2.0f, facing);

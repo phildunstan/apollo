@@ -19,5 +19,6 @@ Sprite CreateSprite(const std::string& spriteFilename);
 void DrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix);
 
 glm::mat4 CreateSpriteModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing);
+glm::mat4 CreateSpriteModelviewMatrix(const Sprite& sprite, const Vector2& position, const Vector2& facing);
 glm::mat4 CreateSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing);
 

@@ -20,6 +20,7 @@
 #include "math_helpers.h"
 #include "Sprite.h"
 #include "debug_draw.h"
+#include "World.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -37,148 +38,35 @@ struct PlayerInput
 PlayerInput playerInput;
 
 
-using ObjectId = uint64_t;
-ObjectId getNextObjectId()
+void ApplyPlayerInput()
 {
-	static ObjectId objectId = 1;
-	return objectId++;
-}
-
-
-struct GameObject
-{
-	GameObject()
-		: objectId { getNextObjectId() }
-		, isAlive { true }
+	auto& playerRB = GetRigidBody(player.objectId);
+	playerRB.position += playerInput.movement * playerMovementSpeed;
+	if (glm::length(playerInput.facing) > 0.5f)
 	{
+		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
+		auto normalizedInput = glm::normalize(playerInput.facing);
+		auto desiredHeading = atan2f(-normalizedInput.x, normalizedInput.y);
+		auto delta = desiredHeading - playerHeading;
+		if (delta < -PI)
+		{
+			delta += TWO_PI;
+		}
+		else if (delta > PI)
+		{
+			delta -= TWO_PI;
+		}
+		delta = clamp(delta, -playerRotationSpeed, playerRotationSpeed);
+		auto newHeading = playerHeading + delta;
+
+		playerRB.facing = Vector2(-sin(newHeading), cos(newHeading));
 	}
 
-	ObjectId objectId;
-	bool isAlive;
-};
-
-GameObject player;
-vector<GameObject> bullets;
-vector<GameObject> enemies;
-
-GameObject& GetGameObject(ObjectId objectId)
-{
-	if (player.objectId == objectId)
-		return player;
-	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
-	// in increasing ObjectId order, and that the vectors are never reordered.
-	auto enemyIter = lower_bound(begin(enemies), end(enemies), objectId, [](const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
-	if ((enemyIter != end(enemies)) && (enemyIter->objectId == objectId))
-		return *enemyIter;
-	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [](const auto& bullet, auto objectId) { return bullet.objectId < objectId; });
-	assert((bulletIter != end(bullets)) && (bulletIter->objectId == objectId));
-	return *bulletIter;
-}
-
-
-struct RigidBody
-{
-	RigidBody(ObjectId _objectId, const Vector3& _position, const Vector3& _facing)
-		: objectId { _objectId }
-		, position { _position }
-		, facing { _facing }
+	if (playerInput.firing)
 	{
-		assert(IsUnitLength(facing));
+		FirePlayerBullet();
 	}
-
-	ObjectId objectId;
-	Vector3 position;
-	Vector3 facing;
-};
-
-vector<RigidBody> rigidBodies;
-
-RigidBody& GetRigidBody(ObjectId objectId)
-{
-	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
-	// in increasing ObjectId order, and that the vectors are never reordered.
-	auto rigidBodyIter = lower_bound(begin(rigidBodies), end(rigidBodies), objectId, [] (const auto& rigidBody, auto objectId) { return rigidBody.objectId < objectId; });
-	assert((rigidBodyIter != end(rigidBodies)) && (rigidBodyIter->objectId == objectId));
-	return *rigidBodyIter;
 }
-
-
-struct CollisionObject
-{
-	CollisionObject(ObjectId _objectId, const Vector3& _aabbDimensions)
-		: objectId(_objectId)
-		, aabbDimensions(_aabbDimensions)
-		, position({ 0.0f, 0.0f, 0.0f })
-		, facing({ 0.0f, 1.0f, 0.0f })
-	{
-	}
-
-	ObjectId objectId;
-	Vector3 aabbDimensions;
-	Vector3 position;
-	Vector3 facing;
-};
-
-vector<CollisionObject> collisionObjects;
-
-vector<Vector3> GatherObjectVertices(const CollisionObject& object)
-{
-	Vector3 yAxis = object.facing;
-	Vector3 xAxis = PerpendicularVector2D(yAxis);
-	Vector3 halfDimensions = 0.5f * object.aabbDimensions;
-	vector<Vector3> vertices{
-		object.position - halfDimensions.x * xAxis - halfDimensions.y * yAxis,
-		object.position + halfDimensions.x * xAxis - halfDimensions.y * yAxis,
-		object.position - halfDimensions.x * xAxis + halfDimensions.y * yAxis,
-		object.position + halfDimensions.x * xAxis + halfDimensions.y * yAxis };
-	return vertices;
-}
-
-bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObject& objectB)
-{
-	// use the Separating Axis Theorem to check for collision
-
-	// collect the vertices for objects A and B
-	vector<Vector3> objectAVertices = GatherObjectVertices(objectA);
-	vector<Vector3> objectBVertices = GatherObjectVertices(objectB);
-
-	// collect the normal vectors for each edge in objects A and B
-	vector<Vector3> edgeNormals;
-	edgeNormals.reserve(4);
-	assert(IsUnitLength(objectA.facing));
-	edgeNormals.push_back(objectA.facing);
-	edgeNormals.push_back(PerpendicularVector2D(objectA.facing));
-	assert(IsUnitLength(objectB.facing));
-	edgeNormals.push_back(objectB.facing);
-	edgeNormals.push_back(PerpendicularVector2D(objectB.facing));
-
-	for (const auto& edgeNormal : edgeNormals)
-	{
-		// find the intervals containing all of the vertices in objects A and B respectively projected edge normals
-		// if the intervals don't overlap then there is no overlap between the objects
-		float objectAMin = FLT_MAX;
-		float objectAMax = -FLT_MAX;
-		for_each(begin(objectAVertices), end(objectAVertices), [&] (const auto& vertex) {
-			float p = glm::dot(vertex, edgeNormal);
-			objectAMin = min(p, objectAMin);
-			objectAMax = max(p, objectAMax);
-		});
-
-		float objectBMin = FLT_MAX;
-		float objectBMax = -FLT_MAX;
-		for_each(begin(objectBVertices), end(objectBVertices), [&] (const auto& vertex) {
-			float p = glm::dot(vertex, edgeNormal);
-			objectBMin = min(p, objectBMin);
-			objectBMax = max(p, objectBMax);
-		});
-
-		if ((objectAMin > objectBMax) || (objectBMin > objectAMax))
-			return false;
-	}
-
-	return true;
-}
-
 
 
 
@@ -203,107 +91,6 @@ bool LoadResources()
 }
 
 
-void AddRigidBody(ObjectId objectId, const Vector3& position, const Vector3& facing)
-{
-	rigidBodies.push_back(RigidBody { objectId, position, facing });
-}
-
-void AddCollisionObject(ObjectId objectId, const Vector3& aabbDimensions)
-{
-	collisionObjects.push_back(CollisionObject { objectId, aabbDimensions });
-}
-
-
-void InitWorld()
-{
-	assert(player.objectId != 0);
-	AddRigidBody(player.objectId, Vector3{ 50.0f, 20.0f, 0.0f }, Vector3{ 1.0f, 0.0f, 0.0f });
-	AddCollisionObject(player.objectId, Vector3 { 32.0f, 32.0f, 0.0f } );
-
-	bullets.reserve(100);
-	enemies.reserve(100);
-
-	enemies.emplace_back();
-	AddRigidBody(enemies.back().objectId, Vector3{ 100.0f, 100.0f, 0.0f }, glm::normalize(Vector3{ 1.0f, 1.0f, 0.0f }));
-	AddCollisionObject(enemies.back().objectId, Vector3 { 32.0f, 32.0f, 0.0f });
-}
-
-
-void FireBullet()
-{
-	const auto& playerRB = GetRigidBody(player.objectId);		
-	bullets.emplace_back();
-	AddRigidBody(bullets.back().objectId, playerRB.position + playerRB.facing * 8.0f, playerRB.facing);
-	AddCollisionObject(bullets.back().objectId, Vector3 { 2.0f, 12.0f, 0.0f });
-}
-
-
-void UpdateWorld(float deltaTime)
-{
-	auto& playerRB = GetRigidBody(player.objectId);
-	playerRB.position += Vector3(playerInput.movement, 0.0f) * playerMovementSpeed;
-	if (glm::length(playerInput.facing) > 0.5f)
-	{
-		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
-		auto normalizedInput = glm::normalize(playerInput.facing);
-		auto desiredHeading = atan2f(-normalizedInput.x, normalizedInput.y);
-		auto delta = desiredHeading - playerHeading;
-		if (delta < -PI)
-		{
-			delta += TWO_PI;
-		}
-		else if (delta > PI)
-		{
-			delta -= TWO_PI;
-		}
-		delta = clamp(delta, -playerRotationSpeed, playerRotationSpeed);
-		auto newHeading = playerHeading + delta;
-
-		playerRB.facing = Vector3(-sin(newHeading), cos(newHeading), 0.0f);
-	}
-
-	if (playerInput.firing)
-	{
-		FireBullet();
-	}
-
-	for_each(begin(bullets), end(bullets), [deltaTime](auto& bullet)
-	{
-		const float bulletSpeed = 1200.0f * deltaTime;
-		auto& bulletRB = GetRigidBody(bullet.objectId);
-		bulletRB.position += bulletSpeed * bulletRB.facing;
-	});
-
-	// update the collision world
-	for_each(begin(collisionObjects), end(collisionObjects), [] (auto& collisionObject)
-	{
-		const auto& rigidBody = GetRigidBody(collisionObject.objectId);
-		collisionObject.position = rigidBody.position;
-		collisionObject.facing = rigidBody.facing;
-	});
-
-	// collision tests between every collision object
-	unordered_set<ObjectId> collidingObjects;
-
-	for (int i = 0; i < collisionObjects.size(); ++i)
-	{
-		for (int j = i + 1; j < collisionObjects.size(); ++j)
-		{
-			if (CollisionObjectsCollide(collisionObjects[i], collisionObjects[j]))
-			{
-				collidingObjects.insert(collisionObjects[i].objectId);
-				collidingObjects.insert(collisionObjects[j].objectId);
-			}
-		}
-	}
-
-	player.isAlive = (collidingObjects.find(player.objectId) == collidingObjects.end());
-	for (auto& enemy : enemies)
-		enemy.isAlive = (collidingObjects.find(enemy.objectId) == collidingObjects.end());
-	for (auto& bullet : bullets)
-		bullet.isAlive = (collidingObjects.find(bullet.objectId) == collidingObjects.end());
-}
-
 
 void RenderWorld()
 {
@@ -320,19 +107,25 @@ void RenderWorld()
 	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
 
 	// draw the bullets
-	for_each(begin(bullets), end(bullets), [&projectionMatrix](const auto& bullet)
+	for_each(begin(bullets), end(bullets), [&projectionMatrix](const GameObject& bullet)
 	{
-		auto& bulletRB = GetRigidBody(bullet.objectId);
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bulletRB.position, bulletRB.facing);
-		DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+		if (bullet.isAlive)
+		{
+			auto& bulletRB = GetRigidBody(bullet.objectId);
+			auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bulletRB.position, bulletRB.facing);
+			DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+		}
 	});
 
-	// draw the enemies
-	for_each(begin(enemies), end(enemies), [&projectionMatrix](const auto& enemy)
+	// draw the aliens
+	for_each(begin(aliens), end(aliens), [&projectionMatrix](const GameObject& enemy)
 	{
-		auto& enemyRB = GetRigidBody(enemy.objectId);
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemyRB.position, enemyRB.facing);
-		DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+		if (enemy.isAlive)
+		{
+			auto& enemyRB = GetRigidBody(enemy.objectId);
+			auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemyRB.position, enemyRB.facing);
+			DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+		}
 	});
 
 	// draw the player
@@ -343,15 +136,15 @@ void RenderWorld()
 	}
 
 	// draw the collision world
-	for_each(begin(collisionObjects), end(collisionObjects), [](const auto& collisionObject)
-	{
-		auto& gameObject = GetGameObject(collisionObject.objectId);
-		auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
-		float w = collisionObject.aabbDimensions.x;
-		float h = collisionObject.aabbDimensions.y;
-		auto color = gameObject.isAlive ? Color::White : Color::Gray;
-		DebugDrawBox(transform, w, h, color);
-	});
+	//for_each(begin(collisionObjects), end(collisionObjects), [](const auto& collisionObject)
+	//{
+	//	auto& gameObject = GetGameObject(collisionObject.objectId);
+	//	auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
+	//	float w = collisionObject.aabbDimensions.x;
+	//	float h = collisionObject.aabbDimensions.y;
+	//	auto color = gameObject.isAlive ? Color::White : Color::Gray;
+	//	DebugDrawBox(transform, w, h, color);
+	//});
 
 	DebugDrawRender(projectionMatrix);
 
@@ -361,6 +154,8 @@ void RenderWorld()
 
 int main(int /*argc*/, char** /*argv*/)
 {
+	SeedRandom(2);
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
 	{
 		printf("SDL init failed: %s\n", SDL_GetError());
@@ -459,6 +254,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 		auto joystickRightTrigger = SDL_JoystickGetAxis(joystick.get(), 5) / 32768.0f;
 		playerInput.firing = (joystickRightTrigger > -0.5f);
+
+		ApplyPlayerInput();
 
 		UpdateWorld(elapsedTime);
 
