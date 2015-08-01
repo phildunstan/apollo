@@ -49,6 +49,15 @@ RigidBody& GetRigidBody(ObjectId objectId)
 	return *rigidBodyIter;
 }
 
+CollisionObject& GetCollisionObject(ObjectId objectId)
+{
+	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
+	// in increasing ObjectId order, and that the vectors are never reordered.
+	auto collisionObjectIter = lower_bound(begin(collisionObjects), end(collisionObjects), objectId, [] (const auto& collisionObjects, auto objectId) { return collisionObjects.objectId < objectId; });
+	assert((collisionObjectIter != end(collisionObjects)) && (collisionObjectIter->objectId == objectId));
+	return *collisionObjectIter;
+}
+
 
 vector<Vector2> GatherObjectVertices(const CollisionObject& object)
 {
@@ -66,6 +75,12 @@ vector<Vector2> GatherObjectVertices(const CollisionObject& object)
 
 bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObject& objectB)
 {
+	// this check really isn't symmetric as we don't check A against B and B against A at the calling site
+	if (((objectA.layerMask & objectB.layer) == CollisionLayer::None) && ((objectB.layerMask & objectA.layer) == CollisionLayer::None))
+	{
+		return false;
+	}
+
 	// use the Separating Axis Theorem to check for collision
 
 	// collect the vertices for objects A and B
@@ -109,6 +124,23 @@ bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObje
 	return true;
 }
 
+bool AABBContains(const Vector2& aabbMin, const Vector2& aabbMax, const Vector2& point)
+{
+	return (point.x >= aabbMin.x) && (point.x <= aabbMax.x) && (point.y >= aabbMin.y) && (point.y <= aabbMax.y);
+}
+
+bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
+{
+	vector<Vector2> objectVertices = GatherObjectVertices(object);
+	for (const auto& vertex : objectVertices)
+	{
+		if (!AABBContains(minWorld, maxWorld, vertex))
+			return true;
+	}
+	return false;
+}
+
+
 
 RigidBody& AddRigidBody(ObjectId objectId, const Vector2& position, const Vector2& facing)
 {
@@ -146,39 +178,63 @@ Vector2 findGoodPlaceToSpawnAlien()
 	return position;
 }
 
-void InitWorld()
+void CreatePlayerGameObject()
 {
 	assert(player.objectId != 0);
 	AddRigidBody(player.objectId, Vector2 { 50.0f, 20.0f }, Vector2 { 1.0f, 0.0f });
-	AddCollisionObject(player.objectId, Vector2 { 32.0f, 32.0f });
+	auto& collisionObject = AddCollisionObject(player.objectId, Vector2 { 32.0f, 32.0f });
+	collisionObject.layer = CollisionLayer::Player;
+	collisionObject.layerMask = CollisionLayer::Alien;
+}
+
+void CreateAlienGameObject()
+{
+	aliens.emplace_back();
+	Vector2 position = findGoodPlaceToSpawnAlien();
+	Vector2 facing = GetRandomVectorOnCircle();
+	float spinSpeed = GetRandomFloat01();
+	auto& rigidBody = AddRigidBody(aliens.back().objectId, position, facing);
+	rigidBody.angularVelocity = 2.0f * (spinSpeed - 0.5f);
+	auto& collisionObject = AddCollisionObject(aliens.back().objectId, Vector2 { 32.0f, 32.0f });
+	collisionObject.layer = CollisionLayer::Alien;
+	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+}
+
+void InitWorld()
+{
+	CreatePlayerGameObject();
 
 	bullets.reserve(100);
 	aliens.reserve(100);
 
 	// create a bunch of aliens to shoot
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 20; ++i)
 	{
-		aliens.emplace_back();
-		Vector2 position = findGoodPlaceToSpawnAlien();
-		Vector2 facing = GetRandomVectorOnCircle();
-		float spinSpeed = GetRandomFloat01();
-		RigidBody& rigidBody = AddRigidBody(aliens.back().objectId, position, facing);
-		rigidBody.angularVelocity = 2.0f * (spinSpeed - 0.5f);
-		AddCollisionObject(aliens.back().objectId, Vector2 { 32.0f, 32.0f });
+		CreateAlienGameObject();
 	}
 }
 
-
-
-void UpdateWorld(float deltaTime)
+void KillObject(GameObject& gameObject)
 {
+	gameObject.isAlive = false;
+	auto& collisionObject = GetCollisionObject(gameObject.objectId);
+	collisionObject.layer = CollisionLayer::PendingDestruction;
+	collisionObject.layerMask = CollisionLayer::None;
+}
+
+
+void UpdateWorld(const Time& time)
+{
+	float deltaTime = time.deltaTime;
+
+	// physics dynamic update
 	for_each(begin(rigidBodies), end(rigidBodies), [deltaTime] (RigidBody& rigidBody)
 	{
 		rigidBody.position += rigidBody.velocity * deltaTime;
 		rigidBody.facing = glm::rotate(rigidBody.facing, rigidBody.angularVelocity * deltaTime);
 	});
 
-	// update the collision world
+	// update collision objects from rigid bodies
 	for_each(begin(collisionObjects), end(collisionObjects), [] (CollisionObject& collisionObject)
 	{
 		const auto& rigidBody = GetRigidBody(collisionObject.objectId);
@@ -187,27 +243,41 @@ void UpdateWorld(float deltaTime)
 	});
 
 	// collision tests between every collision object
-	unordered_set<ObjectId> collidingObjects;
+	vector<ObjectId> collidingObjects;
+	collisionObjects.reserve(collisionObjects.size());
 
 	for (int i = 0; i < collisionObjects.size(); ++i)
 	{
+		auto& collisionObjectI = collisionObjects[i];
+		if (collisionObjectI.layer == CollisionLayer::PendingDestruction)
+			continue;
+		if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
+		{
+			collidingObjects.push_back(collisionObjectI.objectId);
+		}
 		for (int j = i + 1; j < collisionObjects.size(); ++j)
 		{
-			if (CollisionObjectsCollide(collisionObjects[i], collisionObjects[j]))
+			auto& collisionObjectJ = collisionObjects[j];
+			if (collisionObjectJ.layer == CollisionLayer::PendingDestruction)
+				continue;
+			if (CollisionObjectsCollide(collisionObjectI, collisionObjectJ))
 			{
-				collidingObjects.insert(collisionObjects[i].objectId);
-				collidingObjects.insert(collisionObjects[j].objectId);
+				collidingObjects.push_back(collisionObjectI.objectId);
+				collidingObjects.push_back(collisionObjectJ.objectId);
 			}
 		}
 	}
 
-	player.isAlive = (collidingObjects.find(player.objectId) == collidingObjects.end());
+	sort(begin(collidingObjects), end(collidingObjects));
+	unique(begin(collidingObjects), end(collidingObjects));
+
+	player.isAlive = !binary_search(begin(collidingObjects), end(collidingObjects), player.objectId);
 	for (auto& enemy : aliens)
-		if (collidingObjects.find(enemy.objectId) != collidingObjects.end())
-			enemy.isAlive = false;
+		if (binary_search(begin(collidingObjects), end(collidingObjects), enemy.objectId))
+			KillObject(enemy);
 	for (auto& bullet : bullets)
-		if (collidingObjects.find(bullet.objectId) == collidingObjects.end())
-			bullet.isAlive = false;
+		if (binary_search(begin(collidingObjects), end(collidingObjects), bullet.objectId))
+			KillObject(bullet);
 }
 
 
@@ -220,7 +290,9 @@ void FirePlayerBullet()
 	rigidBody.velocity = bulletSpeed * rigidBody.facing;
 	//printf("Fire Bullet %llu at %f, %f with velocity %f, %f\n", rigidBody.objectId, rigidBody.position.x, rigidBody.position.y, rigidBody.velocity.x, rigidBody.velocity.y);
 
-	AddCollisionObject(bullets.back().objectId, Vector2 { 2.0f, 12.0f });
+	auto& collisionObject = AddCollisionObject(bullets.back().objectId, Vector2 { 2.0f, 12.0f });
+	collisionObject.layer = CollisionLayer::PlayerBullet;
+	collisionObject.layerMask = CollisionLayer::Alien;
 }
 
 

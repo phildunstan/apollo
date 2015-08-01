@@ -21,6 +21,6 @@ enum class Color : uint32_t
 void DebugDrawInit();
 void DebugDrawShutdown();
 void DebugDrawClear();
-void DebugDrawLine(const Vector3& begin, const Vector3& end, Color color);
+void DebugDrawLine(const Vector2& begin, const Vector2& end, Color color);
 void DebugDrawBox(const glm::mat4& transform, float w, float h, Color color);
 void DebugDrawRender(const glm::mat4& projectionMatrix);

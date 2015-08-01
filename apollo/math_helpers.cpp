@@ -7,6 +7,24 @@ using namespace std;
 static mt19937_64 randomEngine;
 static uniform_real_distribution<float> randomFloat01(0.0f, 1.0f);
 
+Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3& facing)
+{
+	auto y = facing;
+	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+	auto x = glm::cross(y, z);
+	auto transform = Matrix4x4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(y, 0.0f), glm::vec4(position, 1.0f));
+	return transform;
+}
+
+Matrix4x4 CalculateObjectTransform(const Vector2& position, const Vector2& facing)
+{
+	auto y = glm::vec3(facing, 0.0f);
+	auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+	auto x = glm::cross(y, z);
+	auto transform = Matrix4x4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(y, 0.0f), glm::vec4(position, 0.0f, 1.0f));
+	return transform;
+}
+
 void SeedRandom(uint64_t seed)
 {
 	randomEngine.seed(seed);

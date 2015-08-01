@@ -7,12 +7,12 @@
 
 struct Sprite
 {
-	Vector2 dimensions = { 0.0f, 0.0f };
-	GLuint texture = 0;
-	GLuint vertexBuffer = 0;
-	GLuint vertexCount = 0;
-	GLuint indexBuffer = 0;
-	GLuint indexCount = 0;
+	Vector2 dimensions { 0.0f, 0.0f };
+	GLuint texture { 0 };
+	GLuint vertexBuffer { 0 };
+	GLuint vertexCount { 0 };
+	GLuint indexBuffer { 0 };
+	GLuint indexCount { 0 };
 };
 
 Sprite CreateSprite(const std::string& spriteFilename);

@@ -27,8 +27,9 @@ using namespace std::chrono;
 
 
 
-float playerMovementSpeed = 2.0f;
+float playerMovementSpeed = 120.0f;
 float playerRotationSpeed = 0.2f;
+float playerFireRate = 4.0f; // shots per second
 struct PlayerInput
 {
 	Vector2 movement { 0.0f, 0.0f };
@@ -38,10 +39,10 @@ struct PlayerInput
 PlayerInput playerInput;
 
 
-void ApplyPlayerInput()
+void ApplyPlayerInput(const Time& time)
 {
 	auto& playerRB = GetRigidBody(player.objectId);
-	playerRB.position += playerInput.movement * playerMovementSpeed;
+	playerRB.velocity = playerInput.movement * playerMovementSpeed;
 	if (glm::length(playerInput.facing) > 0.5f)
 	{
 		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
@@ -62,9 +63,10 @@ void ApplyPlayerInput()
 		playerRB.facing = Vector2(-sin(newHeading), cos(newHeading));
 	}
 
-	if (playerInput.firing)
+	if (playerInput.firing && ((time.elapsedTime - player.timeOfLastShot) > 1.0f / playerFireRate))
 	{
 		FirePlayerBullet();
+		player.timeOfLastShot = time.elapsedTime;
 	}
 }
 
@@ -180,9 +182,9 @@ int main(int /*argc*/, char** /*argv*/)
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
 	int windowWidth = 640;
 	int windowHeight = 480;
@@ -213,12 +215,15 @@ int main(int /*argc*/, char** /*argv*/)
 
 	InitWorld();
 
-	auto lastTime = high_resolution_clock::now();
+	auto startTime = high_resolution_clock::now();
+	auto lastTime = startTime;
 
 	for (;;)
 	{
 		auto currentTime = high_resolution_clock::now();
-		auto elapsedTime = duration_cast<duration<float>>(currentTime - lastTime).count();
+		auto elapsedTime = duration_cast<duration<float>>(currentTime - startTime).count();
+		auto deltaTime = duration_cast<duration<float>>(currentTime - lastTime).count();
+		Time time { elapsedTime, deltaTime };
 		lastTime = currentTime;
 
 		SDL_Event e;
@@ -255,9 +260,9 @@ int main(int /*argc*/, char** /*argv*/)
 		auto joystickRightTrigger = SDL_JoystickGetAxis(joystick.get(), 5) / 32768.0f;
 		playerInput.firing = (joystickRightTrigger > -0.5f);
 
-		ApplyPlayerInput();
+		ApplyPlayerInput(time);
 
-		UpdateWorld(elapsedTime);
+		UpdateWorld(time);
 
 		RenderWorld();
 		SDL_GL_SwapWindow(window.get());

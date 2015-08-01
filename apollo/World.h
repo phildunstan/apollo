@@ -5,6 +5,12 @@
 
 #include "math_helpers.h"
 
+struct Time
+{
+	float elapsedTime;
+	float deltaTime;
+};
+
 using ObjectId = uint64_t;
 ObjectId GetNextObjectId();
 
@@ -12,7 +18,6 @@ struct GameObject
 {
 	GameObject()
 		: objectId { GetNextObjectId() }
-		, isAlive { true }
 	{
 	}
 
@@ -23,7 +28,8 @@ struct GameObject
 	GameObject& operator=(const GameObject&) = delete;
 
 	ObjectId objectId;
-	bool isAlive;
+	bool isAlive { true };
+	float timeOfLastShot { 0.0f };
 };
 
 GameObject& GetGameObject(ObjectId objectId);
@@ -54,6 +60,17 @@ struct RigidBody
 
 RigidBody& GetRigidBody(ObjectId objectId);
 
+enum class CollisionLayer : uint32_t { None = 0, Player = 1, PlayerBullet = 2, Alien = 4, All = 0xffff, PendingDestruction = 0x80000000 };
+
+inline CollisionLayer operator&(CollisionLayer lhs, CollisionLayer rhs)
+{
+	return static_cast<CollisionLayer>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+}
+
+inline CollisionLayer operator|(CollisionLayer lhs, CollisionLayer rhs)
+{
+	return static_cast<CollisionLayer>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+}
 
 struct CollisionObject
 {
@@ -73,6 +90,9 @@ struct CollisionObject
 	Vector2 aabbDimensions;
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 1.0f };
+
+	CollisionLayer layer { CollisionLayer::None };
+	CollisionLayer layerMask { CollisionLayer::All }; // all of the layers this collision object collides with
 };
 
 
@@ -84,7 +104,7 @@ extern std::vector<RigidBody> rigidBodies;
 extern std::vector<CollisionObject> collisionObjects;
 
 void InitWorld();
-void UpdateWorld(float deltaTime);
+void UpdateWorld(const Time& time);
 
 void FirePlayerBullet();
 

@@ -26,10 +26,11 @@ Sprite CreateSprite(const std::string& spriteFilename)
 	glGenTextures(1, &sprite.texture);
 	glBindTexture(GL_TEXTURE_2D, sprite.texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
@@ -43,7 +44,7 @@ Sprite CreateSprite(const std::string& spriteFilename)
 	float maxX = w / 2.0f;
 	float minY = -h / 2.0f;
 	float maxY = h / 2.0f;
-	position_uv_vertex vertices[] =
+	position_uv_vertex vertices[]
 	{ { { minX, minY, 0.0f }, { 0.0f, 1.0f } },
 	{ { maxX, minY, 0.0f }, { 1.0f, 1.0f } },
 	{ { maxX, maxY, 0.0f }, { 1.0f, 0.0f } },
@@ -60,7 +61,7 @@ Sprite CreateSprite(const std::string& spriteFilename)
 		printf("Unable to allocate sprite index buffer: %s\n", glewGetErrorString(glGetError()));
 		return Sprite {};
 	}
-	GLushort indices[] = { 0, 1, 3, 3, 1, 2 };
+	GLushort indices[] { 0, 1, 3, 3, 1, 2 };
 	sprite.indexCount = sizeof(indices) / sizeof(GLushort);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sprite.indexCount * sizeof(GLushort), indices, GL_STATIC_DRAW);

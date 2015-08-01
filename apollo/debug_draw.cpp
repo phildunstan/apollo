@@ -14,8 +14,8 @@ static Sprite lineSprite;
 
 struct Line
 {
-	Vector3 begin;
-	Vector3 end;
+	Vector2 begin;
+	Vector2 end;
 	Color color;
 };
 
@@ -24,16 +24,16 @@ static vector<Line> lines;
 
 namespace
 {
-	glm::mat4 CreateDebugDrawSpriteModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing)
+	glm::mat4 CreateDebugDrawSpriteModelviewMatrix(const Sprite& sprite, const Vector2& position, const Vector2& facing)
 	{
-		auto y = facing / sprite.dimensions.y;
-		auto z = glm::vec3(0.0f, 0.0f, 1.0f);
+		auto y = glm::vec3 { facing / sprite.dimensions.y, 0.0f };
+		auto z = glm::vec3 { 0.0f, 0.0f, 1.0f };
 		auto x = glm::normalize(glm::cross(y, z)) / sprite.dimensions.x;
-		auto modelviewMatrix = glm::mat4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(z, 0.0f), glm::vec4(position, 1.0f));
+		auto modelviewMatrix = glm::mat4(glm::vec4(x, 0.0f), glm::vec4(y, 0.0f), glm::vec4(z, 0.0f), glm::vec4(position, 0.0f, 1.0f));
 		return modelviewMatrix;
 	}
 
-	static glm::mat4 CreateDebugDrawSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector3& position, const Vector3& facing)
+	static glm::mat4 CreateDebugDrawSpriteBottomLeftModelviewMatrix(const Sprite& sprite, const Vector2& position, const Vector2& facing)
 	{
 		return CreateDebugDrawSpriteModelviewMatrix(sprite, position + facing / 2.0f, facing);
 	}
@@ -114,7 +114,7 @@ void DebugDrawClear()
 	lines.clear();
 }
 
-void DebugDrawLine(const Vector3& begin, const Vector3& end, Color color)
+void DebugDrawLine(const Vector2& begin, const Vector2& end, Color color)
 {
 	lines.push_back(Line { begin, end, color });
 }
@@ -125,10 +125,10 @@ void DebugDrawBox(const glm::mat4& transform, float w, float h, Color color)
 	auto b = Vector2 { -w / 2.0f ,  h / 2.0f };
 	auto c = Vector2 {  w / 2.0f ,  h / 2.0f };
 	auto d = Vector2 {  w / 2.0f , -h / 2.0f };
-	auto _a = glm::vec3(transform * glm::vec4(a, 0.0f, 1.0f));
-	auto _b = glm::vec3(transform * glm::vec4(b, 0.0f, 1.0f));
-	auto _c = glm::vec3(transform * glm::vec4(c, 0.0f, 1.0f));
-	auto _d = glm::vec3(transform * glm::vec4(d, 0.0f, 1.0f));
+	auto _a = glm::vec2(transform * glm::vec4(a, 0.0f, 1.0f));
+	auto _b = glm::vec2(transform * glm::vec4(b, 0.0f, 1.0f));
+	auto _c = glm::vec2(transform * glm::vec4(c, 0.0f, 1.0f));
+	auto _d = glm::vec2(transform * glm::vec4(d, 0.0f, 1.0f));
 	DebugDrawLine(_a, _b, color);
 	DebugDrawLine(_b, _c, color);
 	DebugDrawLine(_c, _d, color);
