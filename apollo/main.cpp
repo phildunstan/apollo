@@ -1,15 +1,27 @@
 #include <algorithm>
+#include <numeric>
 #include <cstdio>
 #include <cassert>
 #include <memory>
 #include <tuple>
 #include <chrono>
 #include <unordered_set>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 #include "GL/glew.h"
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_main.h"
+
+#pragma warning(push, 3)
+#pragma warning(disable: 4996)
+#define FONTSTASH_IMPLEMENTATION    // Expands implementation
+#include "fontstash.h"
+#define GLFONTSTASH_IMPLEMENTATION  // Expands implementation
+#include "glfontstash.h"
+#pragma warning(pop)
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -25,6 +37,11 @@
 using namespace std;
 using namespace std::chrono;
 
+
+bool IsGameOver()
+{
+	return !any_of(begin(aliens), end(aliens), [] (const GameObject& alien) { return alien.isAlive; });
+}
 
 
 float playerMovementSpeed = 120.0f;
@@ -72,6 +89,8 @@ void ApplyPlayerInput(const Time& time)
 
 
 
+unique_ptr<struct FONScontext, decltype(&glfonsDelete)> fontStash { 0, glfonsDelete };
+int fontNormal;
 
 GLProgram spriteShaderProgram;
 Sprite playerSprite;
@@ -81,6 +100,9 @@ Sprite enemySprite;
 
 bool LoadResources()
 {
+	fontStash = unique_ptr<struct FONScontext, decltype(&glfonsDelete)> { glfonsCreate(512, 512, FONS_ZERO_TOPLEFT), glfonsDelete };
+	fontNormal = fonsAddFont(fontStash.get(), "sans", "Bluehigh.ttf");
+
 	spriteShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
 	if (spriteShaderProgram == 0)
 		return false;
@@ -94,7 +116,7 @@ bool LoadResources()
 
 
 
-void RenderWorld()
+void RenderWorld(const Time& /*time*/)
 {
 	glClearColor(0, 0, 0.2f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -154,6 +176,77 @@ void RenderWorld()
 }
 
 
+vector<string> credits;
+
+void LoadCredits()
+{
+	ifstream is { "credits.txt" };
+	if (!is)
+	{
+		printf("Error opening credits.txt file.");
+		return;
+	}
+	do
+	{
+		string line;
+		getline(is, line);
+		credits.push_back(line);
+	} while (!is.eof());
+	if (!is)
+	{
+		printf("Error reading credits.txt file.");
+		return;
+	}
+}
+
+void RollCredits(const Time& time)
+{
+	if (credits.size() == 0)
+		LoadCredits();
+
+	static float height = 250.0f;
+	height += -20.0f * time.deltaTime;
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
+	fonsSetFont(fontStash.get(), fontNormal);
+	fonsSetSize(fontStash.get(), 24.0f);
+	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
+	float dx = 0.0f, dy = height;
+	for (const auto& line : credits)
+	{
+		fonsDrawText(fontStash.get(), dx, dy, line.c_str(), NULL);
+		dy += 20.0f;
+	}
+}
+
+
+
+void RenderUI(const Time& time)
+{
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
+	float dx = -320.0f, dy = -220.0f;
+	fonsSetFont(fontStash.get(), fontNormal);
+	fonsSetSize(fontStash.get(), 24.0f);
+	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
+	fonsDrawText(fontStash.get(), dx, dy, "Apollo", NULL);
+
+	if (IsGameOver())
+	{
+		RollCredits(time);
+	}
+
+	CheckOpenGLErrors();
+}
+
+
 int main(int /*argc*/, char** /*argv*/)
 {
 	SeedRandom(2);
@@ -202,7 +295,6 @@ int main(int /*argc*/, char** /*argv*/)
 	auto glContextDeleter = make_scope_exit([&glContext] () { SDL_GL_DeleteContext(glContext); });
 
 	glewInit();
-
 	glViewport(0, 0, windowWidth, windowHeight);
 
 	if (!LoadResources())
@@ -264,7 +356,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 		UpdateWorld(time);
 
-		RenderWorld();
+		RenderWorld(time);
+		RenderUI(time);
 		SDL_GL_SwapWindow(window.get());
 	}
 

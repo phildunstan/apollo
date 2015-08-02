@@ -9,7 +9,7 @@
 
 using namespace std;
 
-GameObject player;
+GameObject player { GameObject::CreateGameObject<GameObjectType::Player>() };
 vector<GameObject> bullets;
 vector<GameObject> aliens;
 vector<RigidBody> rigidBodies;
@@ -189,12 +189,18 @@ void CreatePlayerGameObject()
 
 void CreateAlienGameObject()
 {
-	aliens.emplace_back();
+	float random = GetRandomFloat01();
+	if (random < 0.5f)
+		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
+	else if (random < 0.75f)
+		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
+	else
+		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
 	Vector2 position = findGoodPlaceToSpawnAlien();
 	Vector2 facing = GetRandomVectorOnCircle();
 	float spinSpeed = GetRandomFloat01();
 	auto& rigidBody = AddRigidBody(aliens.back().objectId, position, facing);
-	rigidBody.angularVelocity = 2.0f * (spinSpeed - 0.5f);
+	rigidBody.angularVelocity = 20.0f * (spinSpeed - 0.5f);
 	auto& collisionObject = AddCollisionObject(aliens.back().objectId, Vector2 { 32.0f, 32.0f });
 	collisionObject.layer = CollisionLayer::Alien;
 	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
@@ -208,7 +214,8 @@ void InitWorld()
 	aliens.reserve(100);
 
 	// create a bunch of aliens to shoot
-	for (int i = 0; i < 20; ++i)
+	const int numAliens = 10;
+	for (int i = 0; i < numAliens; ++i)
 	{
 		CreateAlienGameObject();
 	}
@@ -222,18 +229,20 @@ void KillObject(GameObject& gameObject)
 	collisionObject.layerMask = CollisionLayer::None;
 }
 
-
-void UpdateWorld(const Time& time)
+void UpdateRigidBodies(const Time& time)
 {
-	float deltaTime = time.deltaTime;
-
 	// physics dynamic update
+	float deltaTime = time.deltaTime;
 	for_each(begin(rigidBodies), end(rigidBodies), [deltaTime] (RigidBody& rigidBody)
 	{
 		rigidBody.position += rigidBody.velocity * deltaTime;
-		rigidBody.facing = glm::rotate(rigidBody.facing, rigidBody.angularVelocity * deltaTime);
+		rigidBody.facing = glm::normalize(glm::rotate(rigidBody.facing, rigidBody.angularVelocity * deltaTime));
 	});
+}
 
+// return all of the objects that have been in a collision
+vector<ObjectId> UpdateCollision(const Time& /*time*/)
+{
 	// update collision objects from rigid bodies
 	for_each(begin(collisionObjects), end(collisionObjects), [] (CollisionObject& collisionObject)
 	{
@@ -271,6 +280,24 @@ void UpdateWorld(const Time& time)
 	sort(begin(collidingObjects), end(collidingObjects));
 	unique(begin(collidingObjects), end(collidingObjects));
 
+	return collidingObjects;
+}
+
+
+void UpdateAI(const Time& time)
+{
+	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
+		alien.aiModel->Update(time, alien);
+	});
+}
+
+
+void UpdateWorld(const Time& time)
+{
+	UpdateRigidBodies(time);
+	auto collidingObjects = UpdateCollision(time);
+
+	// resolve objects that have collided
 	player.isAlive = !binary_search(begin(collidingObjects), end(collidingObjects), player.objectId);
 	for (auto& enemy : aliens)
 		if (binary_search(begin(collidingObjects), end(collidingObjects), enemy.objectId))
@@ -278,13 +305,16 @@ void UpdateWorld(const Time& time)
 	for (auto& bullet : bullets)
 		if (binary_search(begin(collidingObjects), end(collidingObjects), bullet.objectId))
 			KillObject(bullet);
+
+	// update the AI
+	UpdateAI(time);
 }
 
 
 void FirePlayerBullet()
 {
 	const auto& playerRB = GetRigidBody(player.objectId);
-	bullets.emplace_back();
+	bullets.push_back(GameObject::CreateGameObject<GameObjectType::Bullet>());
 	auto& rigidBody = AddRigidBody(bullets.back().objectId, playerRB.position + playerRB.facing * 8.0f, playerRB.facing);
 	const float bulletSpeed = 1200.0f;
 	rigidBody.velocity = bulletSpeed * rigidBody.facing;

@@ -24,4 +24,7 @@
     <None Include="debug_vs.glsl" />
     <None Include="debug_fs.glsl" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="credits.txt" />
+  </ItemGroup>
 </Project>

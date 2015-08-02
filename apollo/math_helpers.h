@@ -34,7 +34,7 @@ inline bool IsSimilar(float x, float y, float epsilon = 1e-4f)
 }
 
 template <typename VectorT>
-inline bool IsUnitLength(const VectorT& v, float epsilon = 2e-5f)
+inline bool IsUnitLength(const VectorT& v, float epsilon = 1e-4f)
 {
 	return IsSimilar(glm::length(v), 1.0f, epsilon);
 }

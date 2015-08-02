@@ -41,6 +41,9 @@
     <Import Project="..\..\3rdparty\libpng\libpng.props" />
     <Import Project="..\..\3rdparty\GLEW\GLEW.props" />
     <Import Project="..\..\3rdparty\glm\glm.props" />
+    <Import Project="..\..\3rdparty\freetype\freetype.props" />
+    <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
+    <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -50,6 +53,9 @@
     <Import Project="..\..\3rdparty\libpng\libpng.props" />
     <Import Project="..\..\3rdparty\GLEW\GLEW.props" />
     <Import Project="..\..\3rdparty\glm\glm.props" />
+    <Import Project="..\..\3rdparty\freetype\freetype.props" />
+    <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
+    <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -121,6 +127,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="credits.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

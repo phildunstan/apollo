@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <cassert>
 
@@ -14,12 +15,14 @@ struct Time
 using ObjectId = uint64_t;
 ObjectId GetNextObjectId();
 
+enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy };
+
+class AIModelBase;
+
 struct GameObject
 {
-	GameObject()
-		: objectId { GetNextObjectId() }
-	{
-	}
+	template <GameObjectType GameObjectTypeT>
+	static GameObject CreateGameObject();
 
 	GameObject(GameObject&&) = default;
 	GameObject& operator=(GameObject&&) = default;
@@ -28,8 +31,14 @@ struct GameObject
 	GameObject& operator=(const GameObject&) = delete;
 
 	ObjectId objectId;
+	GameObjectType type;
 	bool isAlive { true };
 	float timeOfLastShot { 0.0f };
+
+	std::unique_ptr<AIModelBase> aiModel;
+
+private:
+	GameObject() {}
 };
 
 GameObject& GetGameObject(ObjectId objectId);
@@ -96,6 +105,7 @@ struct CollisionObject
 };
 
 
+
 // World data
 extern GameObject player;
 extern std::vector<GameObject> bullets;
@@ -107,4 +117,114 @@ void InitWorld();
 void UpdateWorld(const Time& time);
 
 void FirePlayerBullet();
+
+
+const float alienSpeed = 40.0f;
+
+
+class AIModelBase
+{
+public:
+	AIModelBase() = default;
+	virtual ~AIModelBase() = default;
+	virtual void Update(const Time& time, GameObject& gameObject) = 0;
+
+	AIModelBase(const AIModelBase&) = delete;
+	AIModelBase& operator=(const AIModelBase&) = delete;
+};
+
+
+template <GameObjectType GameObjectTypeT>
+class AIModel : public AIModelBase
+{
+public:
+	AIModel() {}
+	void Update(const Time& /*time*/, GameObject& /*gameObject*/) override {}
+};
+
+template <>
+class AIModel<GameObjectType::AlienRandom> : public AIModelBase
+{
+public:
+	AIModel() {}
+	void Update(const Time& time, GameObject& alien) override
+	{
+		if (time.elapsedTime - timeOfLastMovementChange > 1.0f)
+		{
+			auto& rigidBody = GetRigidBody(alien.objectId);
+			rigidBody.velocity = alienSpeed * GetRandomVectorOnCircle();
+			timeOfLastMovementChange = time.elapsedTime;
+		}
+	}
+
+	float timeOfLastMovementChange { 0.0f };
+};
+
+template <>
+class AIModel<GameObjectType::AlienChase> : public AIModelBase
+{
+public:
+	AIModel() {}
+	void Update(const Time& time, GameObject& alien) override
+	{
+		if (time.elapsedTime - timeOfLastMovementChange > 1.0f)
+		{
+			const auto& playerRigidBody = GetRigidBody(player.objectId);
+			Vector2 playerPosition = playerRigidBody.position;
+
+			auto& rigidBody = GetRigidBody(alien.objectId);
+			rigidBody.velocity = alienSpeed * glm::normalize(playerPosition - rigidBody.position);
+			timeOfLastMovementChange = time.elapsedTime;
+		}
+	}
+
+	float timeOfLastMovementChange { 0.0f };
+};
+
+
+template <>
+class AIModel<GameObjectType::AlienShy> : public AIModelBase
+{
+public:
+	AIModel() {}
+	void Update(const Time& time, GameObject& alien) override
+	{
+		if (time.elapsedTime - timeOfLastMovementChange > 1.0f)
+		{
+			auto& rigidBody = GetRigidBody(alien.objectId);
+			const auto& playerRigidBody = GetRigidBody(player.objectId);
+			Vector2 playerFacing = playerRigidBody.facing;
+			Vector2 playerPosition = playerRigidBody.position;
+
+			if (glm::dot(playerFacing, rigidBody.position - playerPosition) > 0)
+			{
+				rigidBody.velocity = alienSpeed * GetRandomVectorOnCircle();
+			}
+			else
+			{
+				rigidBody.velocity = alienSpeed * glm::normalize(playerPosition - rigidBody.position);
+			}
+			timeOfLastMovementChange = time.elapsedTime;
+		}
+	}
+
+	float timeOfLastMovementChange { 0.0f };
+};
+
+
+
+
+
+template <GameObjectType GameObjectTypeT>
+GameObject GameObject::CreateGameObject()
+{
+	GameObject object;
+	object.objectId = GetNextObjectId();
+	object.type = GameObjectTypeT;
+	object.aiModel = std::make_unique<AIModel<GameObjectTypeT>>();
+	return object;
+}
+
+
+
 
