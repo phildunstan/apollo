@@ -5,9 +5,6 @@
 #include <memory>
 #include <tuple>
 #include <chrono>
-#include <unordered_set>
-#include <fstream>
-#include <iostream>
 #include <string>
 
 #include "GL/glew.h"
@@ -15,17 +12,10 @@
 #include "SDL_image.h"
 #include "SDL_main.h"
 
-#pragma warning(push, 3)
-#pragma warning(disable: 4996)
-#define FONTSTASH_IMPLEMENTATION    // Expands implementation
-#include "fontstash.h"
-#define GLFONTSTASH_IMPLEMENTATION  // Expands implementation
-#include "glfontstash.h"
-#pragma warning(pop)
-
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "game.h"
 #include "scope_exit.h"
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
@@ -33,15 +23,10 @@
 #include "Sprite.h"
 #include "debug_draw.h"
 #include "World.h"
+#include "rendering.h"
 
 using namespace std;
 using namespace std::chrono;
-
-
-bool IsGameOver()
-{
-	return !any_of(begin(aliens), end(aliens), [] (const GameObject& alien) { return alien.isAlive; });
-}
 
 
 float playerMovementSpeed = 120.0f;
@@ -54,6 +39,29 @@ struct PlayerInput
 	bool firing { false };
 };
 PlayerInput playerInput;
+
+
+void ReadPlayerInputFromJoystick(SDL_Joystick& joystick)
+{
+	auto joystickMovementX = SDL_JoystickGetAxis(&joystick, 0) / 32768.0f;
+	auto joystickMovementY = -SDL_JoystickGetAxis(&joystick, 1) / 32768.0f;
+	auto movementInput = Vector2(joystickMovementX, joystickMovementY);
+	if (glm::length(movementInput) > 0.2f)
+	{
+		playerInput.movement = movementInput;
+	}
+	else
+	{
+		playerInput.movement = Vector2(0.0f, 0.0f);
+	}
+
+	auto joystickFacingX = SDL_JoystickGetAxis(&joystick, 2) / 32768.0f;
+	auto joystickFacingY = -SDL_JoystickGetAxis(&joystick, 3) / 32768.0f;
+	playerInput.facing = Vector2(joystickFacingX, joystickFacingY);
+
+	auto joystickRightTrigger = SDL_JoystickGetAxis(&joystick, 5) / 32768.0f;
+	playerInput.firing = (joystickRightTrigger > -0.5f);
+}
 
 
 void ApplyPlayerInput(const Time& time)
@@ -89,164 +97,6 @@ void ApplyPlayerInput(const Time& time)
 
 
 
-unique_ptr<struct FONScontext, decltype(&glfonsDelete)> fontStash { 0, glfonsDelete };
-int fontNormal;
-
-GLProgram spriteShaderProgram;
-Sprite playerSprite;
-Sprite bulletSprite;
-Sprite enemySprite;
-
-
-bool LoadResources()
-{
-	fontStash = unique_ptr<struct FONScontext, decltype(&glfonsDelete)> { glfonsCreate(512, 512, FONS_ZERO_TOPLEFT), glfonsDelete };
-	fontNormal = fonsAddFont(fontStash.get(), "sans", "Bluehigh.ttf");
-
-	spriteShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
-	if (spriteShaderProgram == 0)
-		return false;
-
-	playerSprite = CreateSprite("apollo.png");
-	bulletSprite = CreateSprite("bullet.png");
-	enemySprite = CreateSprite("enemy.png");
-
-	return CheckOpenGLErrors();
-}
-
-
-
-void RenderWorld(const Time& /*time*/)
-{
-	glClearColor(0, 0, 0.2f, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glDisable(GL_DEPTH_TEST);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glUseProgram(spriteShaderProgram);
-
-	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
-
-	// draw the bullets
-	for_each(begin(bullets), end(bullets), [&projectionMatrix](const GameObject& bullet)
-	{
-		if (bullet.isAlive)
-		{
-			auto& bulletRB = GetRigidBody(bullet.objectId);
-			auto modelviewMatrix = CreateSpriteModelviewMatrix(bulletSprite, bulletRB.position, bulletRB.facing);
-			DrawSprite(bulletSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-		}
-	});
-
-	// draw the aliens
-	for_each(begin(aliens), end(aliens), [&projectionMatrix](const GameObject& enemy)
-	{
-		if (enemy.isAlive)
-		{
-			auto& enemyRB = GetRigidBody(enemy.objectId);
-			auto modelviewMatrix = CreateSpriteModelviewMatrix(enemySprite, enemyRB.position, enemyRB.facing);
-			DrawSprite(enemySprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-		}
-	});
-
-	// draw the player
-	{
-		auto& playerRB = GetRigidBody(player.objectId);
-		auto modelviewMatrix = CreateSpriteModelviewMatrix(playerSprite, playerRB.position, playerRB.facing);
-		DrawSprite(playerSprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
-	}
-
-	// draw the collision world
-	//for_each(begin(collisionObjects), end(collisionObjects), [](const auto& collisionObject)
-	//{
-	//	auto& gameObject = GetGameObject(collisionObject.objectId);
-	//	auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
-	//	float w = collisionObject.aabbDimensions.x;
-	//	float h = collisionObject.aabbDimensions.y;
-	//	auto color = gameObject.isAlive ? Color::White : Color::Gray;
-	//	DebugDrawBox(transform, w, h, color);
-	//});
-
-	DebugDrawRender(projectionMatrix);
-
-	CheckOpenGLErrors();
-}
-
-
-vector<string> credits;
-
-void LoadCredits()
-{
-	ifstream is { "credits.txt" };
-	if (!is)
-	{
-		printf("Error opening credits.txt file.");
-		return;
-	}
-	do
-	{
-		string line;
-		getline(is, line);
-		credits.push_back(line);
-	} while (!is.eof());
-	if (!is)
-	{
-		printf("Error reading credits.txt file.");
-		return;
-	}
-}
-
-void RollCredits(const Time& time)
-{
-	if (credits.size() == 0)
-		LoadCredits();
-
-	static float height = 250.0f;
-	height += -20.0f * time.deltaTime;
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
-	fonsSetFont(fontStash.get(), fontNormal);
-	fonsSetSize(fontStash.get(), 24.0f);
-	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
-	float dx = 0.0f, dy = height;
-	for (const auto& line : credits)
-	{
-		fonsDrawText(fontStash.get(), dx, dy, line.c_str(), NULL);
-		dy += 20.0f;
-	}
-}
-
-
-
-void RenderUI(const Time& time)
-{
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
-	float dx = -320.0f, dy = -220.0f;
-	fonsSetFont(fontStash.get(), fontNormal);
-	fonsSetSize(fontStash.get(), 24.0f);
-	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
-	fonsDrawText(fontStash.get(), dx, dy, "Apollo", NULL);
-
-	if (IsGameOver())
-	{
-		RollCredits(time);
-	}
-
-	CheckOpenGLErrors();
-}
-
-
 int main(int /*argc*/, char** /*argv*/)
 {
 	SeedRandom(2);
@@ -267,6 +117,11 @@ int main(int /*argc*/, char** /*argv*/)
 	auto sdlImageQuiter = make_scope_exit(IMG_Quit);
 
 	auto joystick = unique_ptr<SDL_Joystick, decltype(&SDL_JoystickClose)>(SDL_JoystickOpen(0), SDL_JoystickClose);
+	if (!joystick)
+	{
+		printf("No joystick attached.\n");
+	}
+		
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -329,29 +184,10 @@ int main(int /*argc*/, char** /*argv*/)
 			}
 		}
 
-		if (!joystick)
+		if (joystick)
 		{
-			printf("Unable to open SDL Joystick: %s\n", SDL_GetError());
+			ReadPlayerInputFromJoystick(*joystick);
 		}
-		auto joystickMovementX = SDL_JoystickGetAxis(joystick.get(), 0) / 32768.0f;
-		auto joystickMovementY = -SDL_JoystickGetAxis(joystick.get(), 1) / 32768.0f;
-		auto movementInput = Vector2(joystickMovementX, joystickMovementY);
-		if (glm::length(movementInput) > 0.2f)
-		{
-			playerInput.movement = movementInput;
-		}
-		else
-		{
-			playerInput.movement = Vector2(0.0f, 0.0f);
-		}
-
-		auto joystickFacingX = SDL_JoystickGetAxis(joystick.get(), 2) / 32768.0f;
-		auto joystickFacingY = -SDL_JoystickGetAxis(joystick.get(), 3) / 32768.0f;
-		playerInput.facing = Vector2(joystickFacingX, joystickFacingY);
-
-		auto joystickRightTrigger = SDL_JoystickGetAxis(joystick.get(), 5) / 32768.0f;
-		playerInput.firing = (joystickRightTrigger > -0.5f);
-
 		ApplyPlayerInput(time);
 
 		UpdateWorld(time);

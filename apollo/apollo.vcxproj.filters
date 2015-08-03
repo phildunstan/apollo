@@ -8,6 +8,8 @@
     <ClCompile Include="debug_draw.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="math_helpers.cpp" />
+    <ClCompile Include="physics.cpp" />
+    <ClCompile Include="rendering.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
@@ -17,6 +19,11 @@
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="debug_draw.h" />
     <ClInclude Include="World.h" />
+    <ClInclude Include="physics.h" />
+    <ClInclude Include="ai.h" />
+    <ClInclude Include="game_object.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="rendering.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />
