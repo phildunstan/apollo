@@ -6,6 +6,7 @@
 
 #include "physics.h"
 #include "math_helpers.h"
+#include "ai.h"
 
 using namespace std;
 
@@ -72,11 +73,20 @@ void CreateAlienGameObject()
 {
 	float random = GetRandomFloat01();
 	if (random < 0.5f)
+	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
+		aliens.back().aiModel = std::make_unique<AIModelAlienShy>();
+	}
 	else if (random < 0.75f)
+	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
+		aliens.back().aiModel = std::make_unique<AIModelAlienChase>();
+	}
 	else
+	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
+		aliens.back().aiModel = std::make_unique<AIModelAlienRandom>();
+	}
 
 	Vector2 position = findGoodPlaceToSpawnAlien();
 	Vector2 facing = GetRandomVectorOnCircle();
@@ -117,7 +127,10 @@ void KillGameObject(GameObject& gameObject)
 void UpdateAI(const Time& time)
 {
 	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
-		alien.aiModel->Update(time, alien);
+		if (alien.isAlive)
+		{
+			alien.aiModel->Update(time, alien);
+		}
 	});
 }
 
@@ -125,6 +138,9 @@ void UpdateAI(const Time& time)
 void UpdateWorld(const Time& time)
 {
 	UpdateRigidBodies(time);
+
+	EnsurePlayerIsInsideWorldBounds();
+
 	auto collidingObjects = UpdateCollision(time);
 
 	// resolve objects that have collided
@@ -147,18 +163,29 @@ bool IsGameOver()
 }
 
 
+GameObject& CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask)
+{
+	bullets.push_back(GameObject::CreateGameObject<GameObjectType::Bullet>());
+	auto& rigidBody = AddRigidBody(bullets.back().objectId, position, glm::normalize(velocity));
+	rigidBody.velocity = velocity;
+	//printf("Fire Bullet %llu at %f, %f with velocity %f, %f\n", rigidBody.objectId, rigidBody.bulletPosition.x, rigidBody.bulletPosition.y, rigidBody.velocity.x, rigidBody.velocity.y);
+
+	auto& collisionObject = AddCollisionObject(bullets.back().objectId, Vector2 { 2.0f, 12.0f });
+	collisionObject.layer = collisionLayer;
+	collisionObject.layerMask = collisionMask;
+
+	return bullets.back();
+}
+
 void FirePlayerBullet()
 {
 	const auto& playerRB = GetRigidBody(player.objectId);
-	bullets.push_back(GameObject::CreateGameObject<GameObjectType::Bullet>());
-	auto& rigidBody = AddRigidBody(bullets.back().objectId, playerRB.position + playerRB.facing * 8.0f, playerRB.facing);
+	Vector2 fireOffset { 0.0f, 8.0f };
+	Vector4 bulletPosition4 = CalculateObjectTransform(playerRB.position, playerRB.facing) * Vector4(fireOffset, 0.0f, 1.0f);
+	Vector2 bulletPosition { bulletPosition4.x, bulletPosition4.y };
 	const float bulletSpeed = 1200.0f;
-	rigidBody.velocity = bulletSpeed * rigidBody.facing;
-	//printf("Fire Bullet %llu at %f, %f with velocity %f, %f\n", rigidBody.objectId, rigidBody.position.x, rigidBody.position.y, rigidBody.velocity.x, rigidBody.velocity.y);
-
-	auto& collisionObject = AddCollisionObject(bullets.back().objectId, Vector2 { 2.0f, 12.0f });
-	collisionObject.layer = CollisionLayer::PlayerBullet;
-	collisionObject.layerMask = CollisionLayer::Alien;
+	Vector2 bulletVelocity = bulletSpeed * playerRB.facing;
+	CreateBullet(bulletPosition, bulletVelocity, CollisionLayer::PlayerBullet, CollisionLayer::Alien);
 }
 
 

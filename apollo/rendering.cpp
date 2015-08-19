@@ -21,6 +21,7 @@
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
 #include "math_helpers.h"
+#include "physics.h"
 #include "Sprite.h"
 #include "game_object.h"
 #include "world.h"
@@ -186,7 +187,7 @@ void RollCredits(const Time& time)
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
-	float dx = 0.0f, dy = height;
+	float dx = -100.0f, dy = height;
 	for (const auto& line : credits)
 	{
 		fonsDrawText(fontStash.get(), dx, dy, line.c_str(), NULL);

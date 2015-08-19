@@ -7,6 +7,7 @@
 #include "game.h"
 #include "math_helpers.h"
 #include "game_object.h"
+#include "physics.h"
 
 
 extern const Vector2 minWorld;
@@ -23,13 +24,8 @@ void InitWorld();
 void UpdateWorld(const Time& time);
 bool IsGameOver();
 
-
-
+GameObject& CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask);
 void FirePlayerBullet();
-
-
-
-#include "ai.h"
 
 template <GameObjectType GameObjectTypeT>
 GameObject GameObject::CreateGameObject()
@@ -37,7 +33,7 @@ GameObject GameObject::CreateGameObject()
 	GameObject object;
 	object.objectId = GetNextObjectId();
 	object.type = GameObjectTypeT;
-	object.aiModel = std::make_unique<AIModel<GameObjectTypeT>>();
+	object.aiModel = nullptr;
 	return object;
 }
 

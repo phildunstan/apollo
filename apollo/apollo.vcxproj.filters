@@ -10,6 +10,7 @@
     <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="rendering.cpp" />
+    <ClCompile Include="ai.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />

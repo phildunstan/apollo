@@ -22,8 +22,9 @@
 #include "math_helpers.h"
 #include "Sprite.h"
 #include "debug_draw.h"
-#include "World.h"
+#include "physics.h"
 #include "rendering.h"
+#include "World.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -68,6 +69,7 @@ void ApplyPlayerInput(const Time& time)
 {
 	auto& playerRB = GetRigidBody(player.objectId);
 	playerRB.velocity = playerInput.movement * playerMovementSpeed;
+
 	if (glm::length(playerInput.facing) > 0.5f)
 	{
 		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
@@ -87,6 +89,14 @@ void ApplyPlayerInput(const Time& time)
 
 		playerRB.facing = Vector2(-sin(newHeading), cos(newHeading));
 	}
+
+	//// stop the player movement if they are colliding with the edge of the screen
+	//const auto& collisionObject = GetCollisionObject(player.objectId);
+	//Vector2 futurePosition = playerRB.position + playerRB.velocity * time.deltaTime;
+	//if (BoundingBoxCollidesWithWorldEdge(futurePosition, playerRB.facing, collisionObject.aabbDimensions))
+	//{
+	//	playerRB.velocity = Vector2 { 0.0f, 0.0f };
+	//}
 
 	if (playerInput.firing && ((time.elapsedTime - player.timeOfLastShot) > 1.0f / playerFireRate))
 	{

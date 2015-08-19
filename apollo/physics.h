@@ -74,6 +74,11 @@ RigidBody& AddRigidBody(ObjectId objectId, const Vector2& position, const Vector
 RigidBody& GetRigidBody(ObjectId objectId);
 void UpdateRigidBodies(const Time& time);
 
+void EnsurePlayerIsInsideWorldBounds();
+
+bool BoundingBoxCollidesWithWorldEdge(const Vector2& position, const Vector2& facing, const Vector2& dimensions);
+bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object);
+
 CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& aabbDimensions);
 CollisionObject& GetCollisionObject(ObjectId objectId);
 std::vector<ObjectId> UpdateCollision(const Time& time);

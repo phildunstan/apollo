@@ -99,6 +99,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ai.cpp" />
     <ClCompile Include="debug_draw.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="gl_helpers.cpp" />

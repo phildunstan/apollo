@@ -30,17 +30,23 @@ CollisionObject& GetCollisionObject(ObjectId objectId)
 }
 
 
+vector<Vector2> GatherBoundingBoxVertices(const Vector2& position, const Vector2& facing, const Vector2& dimensions)
+{
+	Vector2 yAxis = facing;
+	Vector2 xAxis = PerpendicularVector2D(yAxis);
+	Vector2 halfDimensions = 0.5f * dimensions;
+	vector<Vector2> vertices {
+		position - halfDimensions.x * xAxis - halfDimensions.y * yAxis,
+		position + halfDimensions.x * xAxis - halfDimensions.y * yAxis,
+		position - halfDimensions.x * xAxis + halfDimensions.y * yAxis,
+		position + halfDimensions.x * xAxis + halfDimensions.y * yAxis };
+	return vertices;
+}
+
+
 vector<Vector2> GatherObjectVertices(const CollisionObject& object)
 {
-	Vector2 yAxis = object.facing;
-	Vector2 xAxis = PerpendicularVector2D(yAxis);
-	Vector2 halfDimensions = 0.5f * object.aabbDimensions;
-	vector<Vector2> vertices {
-		object.position - halfDimensions.x * xAxis - halfDimensions.y * yAxis,
-		object.position + halfDimensions.x * xAxis - halfDimensions.y * yAxis,
-		object.position - halfDimensions.x * xAxis + halfDimensions.y * yAxis,
-		object.position + halfDimensions.x * xAxis + halfDimensions.y * yAxis };
-	return vertices;
+	return GatherBoundingBoxVertices(object.position, object.facing, object.aabbDimensions);
 }
 
 
@@ -100,6 +106,19 @@ bool AABBContains(const Vector2& aabbMin, const Vector2& aabbMax, const Vector2&
 	return (point.x >= aabbMin.x) && (point.x <= aabbMax.x) && (point.y >= aabbMin.y) && (point.y <= aabbMax.y);
 }
 
+
+bool BoundingBoxCollidesWithWorldEdge(const Vector2& position, const Vector2& facing, const Vector2& dimensions)
+{
+	vector<Vector2> objectVertices = GatherBoundingBoxVertices(position, facing, dimensions);
+	for (const auto& vertex : objectVertices)
+	{
+		if (!AABBContains(minWorld, maxWorld, vertex))
+			return true;
+	}
+	return false;
+}
+
+
 bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
 {
 	vector<Vector2> objectVertices = GatherObjectVertices(object);
@@ -138,6 +157,37 @@ void UpdateRigidBodies(const Time& time)
 		rigidBody.position += rigidBody.velocity * deltaTime;
 		rigidBody.facing = glm::normalize(glm::rotate(rigidBody.facing, rigidBody.angularVelocity * deltaTime));
 	});
+}
+
+void EnsurePlayerIsInsideWorldBounds()
+{
+	auto& playerRB = GetRigidBody(player.objectId);
+	const auto& playerCollision = GetCollisionObject(player.objectId);
+	vector<Vector2> objectVertices = GatherBoundingBoxVertices(playerRB.position, playerRB.facing, playerCollision.aabbDimensions);
+	Vector2 deltaRequired { 0.0f, 0.0f };
+	for (const auto& vertex : objectVertices)
+	{
+		if (vertex.x < minWorld.x)
+		{
+			deltaRequired.x = max(deltaRequired.x, minWorld.x - vertex.x);
+		}
+		else if (vertex.x > maxWorld.x)
+		{
+			deltaRequired.x = min(deltaRequired.x, maxWorld.x - vertex.x);
+		}
+		if (vertex.y < minWorld.y)
+		{
+			deltaRequired.y = max(deltaRequired.y, minWorld.y - vertex.y);
+		}
+		else if (vertex.y > maxWorld.y)
+		{
+			deltaRequired.y = min(deltaRequired.y, maxWorld.y - vertex.y);
+		}
+	}
+	if (deltaRequired != Vector2 { 0.0f, 0.0f })
+	{
+		playerRB.position = playerRB.position + deltaRequired;
+	}
 }
 
 // return all of the objects that have been in a collision
