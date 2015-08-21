@@ -105,10 +105,11 @@
     <ClCompile Include="gl_helpers.cpp" />
     <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="physics.cpp" />
+    <ClCompile Include="player.cpp" />
     <ClCompile Include="rendering.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
-    <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="World.cpp" />
+    <ClCompile Include="sprite.cpp" />
+    <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai.h" />
@@ -118,11 +119,12 @@
     <ClInclude Include="gl_helpers.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="physics.h" />
+    <ClInclude Include="player.h" />
     <ClInclude Include="rendering.h" />
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="sdl_helpers.h" />
-    <ClInclude Include="Sprite.h" />
-    <ClInclude Include="World.h" />
+    <ClInclude Include="sprite.h" />
+    <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="debug_fs.glsl" />

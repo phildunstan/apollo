@@ -4,27 +4,29 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="gl_helpers.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
-    <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="debug_draw.cpp" />
-    <ClCompile Include="World.cpp" />
     <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="rendering.cpp" />
     <ClCompile Include="ai.cpp" />
+    <ClCompile Include="sprite.cpp" />
+    <ClCompile Include="world.cpp" />
+    <ClCompile Include="player.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="gl_helpers.h" />
     <ClInclude Include="sdl_helpers.h" />
-    <ClInclude Include="Sprite.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="debug_draw.h" />
-    <ClInclude Include="World.h" />
     <ClInclude Include="physics.h" />
     <ClInclude Include="ai.h" />
     <ClInclude Include="game_object.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="rendering.h" />
+    <ClInclude Include="sprite.h" />
+    <ClInclude Include="world.h" />
+    <ClInclude Include="player.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />

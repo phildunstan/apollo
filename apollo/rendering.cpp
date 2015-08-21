@@ -22,7 +22,8 @@
 #include "sdl_helpers.h"
 #include "math_helpers.h"
 #include "physics.h"
-#include "Sprite.h"
+#include "player.h"
+#include "sprite.h"
 #include "game_object.h"
 #include "world.h"
 #include "debug_draw.h"
@@ -204,11 +205,23 @@ void RenderUI(const Time& time)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
+
 	float dx = -320.0f, dy = -220.0f;
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
 	fonsDrawText(fontStash.get(), dx, dy, "Apollo", NULL);
+
+
+	dx = 180.0f;
+	fonsSetFont(fontStash.get(), fontNormal);
+	fonsSetSize(fontStash.get(), 24.0f);
+	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
+	char scoreText[24];
+	snprintf(scoreText, 24, "Score: %04d", playerScore);
+	fonsDrawText(fontStash.get(), dx, dy, scoreText, NULL);
+
+
 
 	if (IsGameOver())
 	{

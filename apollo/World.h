@@ -38,3 +38,4 @@ GameObject GameObject::CreateGameObject()
 }
 
 
+std::vector<ObjectId> GetAliensInCircle(const Vector2& center, float radius);

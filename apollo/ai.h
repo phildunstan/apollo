@@ -3,7 +3,7 @@
 struct Time;
 struct GameObject;
 
-const float alienSpeed = 40.0f;
+const float maxAlienSpeed = 40.0f;
 
 class AIModel
 {
@@ -28,15 +28,6 @@ public:
 };
 
 
-class AIModelAlienChase : public AIModel
-{
-public:
-	void Update(const Time& time, GameObject& alien) override;
-
-	float timeOfLastMovementChange { 0.0f };
-};
-
-
 class AIModelAlienShy : public AIModel
 {
 public:
@@ -45,6 +36,12 @@ public:
 	float timeOfLastMovementChange { 0.0f };
 };
 
+
+class AIModelAlienChase : public AIModel
+{
+public:
+	void Update(const Time& time, GameObject& alien) override;
+};
 
 
 

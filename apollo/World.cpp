@@ -1,10 +1,11 @@
-#include "World.h"
+#include "world.h"
 
 #include <iterator>
 #include <algorithm>
 #include <unordered_set>
 
 #include "physics.h"
+#include "player.h"
 #include "math_helpers.h"
 #include "ai.h"
 
@@ -117,6 +118,7 @@ void InitWorld()
 
 void KillGameObject(GameObject& gameObject)
 {
+	IncrementPlayerScore(gameObject);
 	gameObject.isAlive = false;
 	auto& collisionObject = GetCollisionObject(gameObject.objectId);
 	collisionObject.layer = CollisionLayer::PendingDestruction;
@@ -188,4 +190,25 @@ void FirePlayerBullet()
 	CreateBullet(bulletPosition, bulletVelocity, CollisionLayer::PlayerBullet, CollisionLayer::Alien);
 }
 
+
+vector<ObjectId> GetAliensInCircle(const Vector2& center, float radius)
+{
+	vector<ObjectId> nearby;
+	nearby.reserve(aliens.size());
+
+	for (auto& alien : aliens)
+	{
+		if (!alien.isAlive)
+			continue;
+
+		const auto& rigidBody = GetRigidBody(alien.objectId);
+		float distance = glm::distance(rigidBody.position, center);
+		if (distance <= radius)
+		{
+			nearby.push_back(alien.objectId);
+		}
+	}
+
+	return nearby;
+}
 
