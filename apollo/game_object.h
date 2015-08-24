@@ -6,7 +6,7 @@
 using ObjectId = uint64_t;
 ObjectId GetNextObjectId();
 
-enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy };
+enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy, AlienMothership, AlienOffspring };
 
 struct GameObject
 {

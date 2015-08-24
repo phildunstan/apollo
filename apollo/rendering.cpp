@@ -80,6 +80,8 @@ bool LoadResources()
 	CreateRenderModel(GameObjectType::AlienRandom, "enemy_random.png");
 	CreateRenderModel(GameObjectType::AlienChase, "enemy_chase.png");
 	CreateRenderModel(GameObjectType::AlienShy, "enemy_shy.png");
+	CreateRenderModel(GameObjectType::AlienMothership, "enemy_mothership.png");
+	CreateRenderModel(GameObjectType::AlienOffspring, "enemy_offspring.png");
 
 	return CheckOpenGLErrors();
 }

@@ -76,27 +76,29 @@ void CreateAlienGameObject()
 	if (random < 0.5f)
 	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
-		aliens.back().aiModel = std::make_unique<AIModelAlienShy>();
 	}
 	else if (random < 0.75f)
 	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
-		aliens.back().aiModel = std::make_unique<AIModelAlienChase>();
+	}
+	else if (random < 0.9f)
+	{
+		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
 	}
 	else
 	{
-		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
-		aliens.back().aiModel = std::make_unique<AIModelAlienRandom>();
+		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienMothership>());
 	}
+	GameObject& alien = aliens.back();
 
 	Vector2 position = findGoodPlaceToSpawnAlien();
 	Vector2 facing = GetRandomVectorOnCircle();
-	float spinSpeed = GetRandomFloat01();
-	auto& rigidBody = AddRigidBody(aliens.back().objectId, position, facing);
-	rigidBody.angularVelocity = 20.0f * (spinSpeed - 0.5f);
-	auto& collisionObject = AddCollisionObject(aliens.back().objectId, Vector2 { 32.0f, 32.0f });
+	AddRigidBody(alien.objectId, position, facing);
+	auto& collisionObject = AddCollisionObject(alien.objectId, Vector2 { 32.0f, 32.0f });
 	collisionObject.layer = CollisionLayer::Alien;
 	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+
+	alien.aiModel = CreateAI(alien);
 }
 
 
@@ -108,7 +110,7 @@ void InitWorld()
 	aliens.reserve(100);
 
 	// create a bunch of aliens to shoot
-	const int numAliens = 10;
+	const int numAliens = 12;
 	for (int i = 0; i < numAliens; ++i)
 	{
 		CreateAlienGameObject();
@@ -131,7 +133,7 @@ void UpdateAI(const Time& time)
 	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
 		if (alien.isAlive)
 		{
-			alien.aiModel->Update(time, alien);
+			alien.aiModel->Update(time);
 		}
 	});
 }

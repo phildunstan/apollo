@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 struct Time;
 struct GameObject;
 
@@ -10,19 +12,23 @@ class AIModel
 public:
 	AIModel() = default;
 	virtual ~AIModel() = default;
-	virtual void Update(const Time& time, GameObject& gameObject) = 0;
+	virtual void Update(const Time& time) = 0;
 
 	AIModel(const AIModel&) = delete;
 	AIModel& operator=(const AIModel&) = delete;
 };
 
+std::unique_ptr<AIModel> CreateAI(GameObject& gameObject);
+
 
 class AIModelAlienRandom : public AIModel
 {
 public:
-	~AIModelAlienRandom() {}
-	void Update(const Time& time, GameObject& alien) override;
+	AIModelAlienRandom(GameObject& alien);
+	void Update(const Time& time) override;
 
+private:
+	GameObject& alien;
 	float timeOfLastMovementChange { 0.0f };
 	float timeOfLastShot { 0.0f };
 };
@@ -31,8 +37,11 @@ public:
 class AIModelAlienShy : public AIModel
 {
 public:
-	void Update(const Time& time, GameObject& alien) override;
+	AIModelAlienShy(GameObject& alien);
+	void Update(const Time& time) override;
 
+private:
+	GameObject& alien;
 	float timeOfLastMovementChange { 0.0f };
 };
 
@@ -40,7 +49,39 @@ public:
 class AIModelAlienChase : public AIModel
 {
 public:
-	void Update(const Time& time, GameObject& alien) override;
+	AIModelAlienChase(GameObject& alien);
+	void Update(const Time& time) override;
+
+private:
+	GameObject& alien;
+};
+
+
+class AIModelAlienMothership : public AIModel
+{
+public:
+	AIModelAlienMothership(GameObject& alien);
+	void Update(const Time& time) override;
+
+private:
+	static void LaunchOffspring(const GameObject& parent);
+
+	GameObject& alien;
+	enum class LaunchingMode { Waiting, Launching };
+	LaunchingMode currentMode { LaunchingMode::Waiting };
+	float timeOfLastLaunch { 0.0f };
+	float numberOfOffspringLaunchedThisWave = 0;
+};
+
+
+class AIModelAlienOffspring : public AIModel
+{
+public:
+	AIModelAlienOffspring(GameObject& alien);
+	void Update(const Time& time) override;
+
+private:
+	GameObject& alien;
 };
 
 

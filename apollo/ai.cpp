@@ -8,6 +8,31 @@
 
 using namespace std;
 
+std::unique_ptr<AIModel> CreateAI(GameObject& gameObject)
+{
+	switch (gameObject.type)
+	{
+	case GameObjectType::Player:
+		return nullptr;
+	case GameObjectType::Bullet:
+		return nullptr;
+	case GameObjectType::AlienRandom:
+		return std::make_unique<AIModelAlienRandom>(gameObject);
+	case GameObjectType::AlienChase:
+		return std::make_unique<AIModelAlienChase>(gameObject);
+	case GameObjectType::AlienShy:
+		return std::make_unique<AIModelAlienShy>(gameObject);
+	case GameObjectType::AlienMothership:
+		return std::make_unique<AIModelAlienMothership>(gameObject);
+	case GameObjectType::AlienOffspring:
+		return std::make_unique<AIModelAlienOffspring>(gameObject);
+	};
+	return nullptr;
+}
+
+
+
+
 void UpdateRandomVelocity(GameObject& alien, RigidBody& rigidBody, const Time& /*time*/, float lookAheadTime)
 {
 	auto& collisionObject = GetCollisionObject(alien.objectId);
@@ -55,7 +80,14 @@ void UpdateChaseVelocity(GameObject& alien, RigidBody& rigidBody, const Time& ti
 }
 
 
-void AIModelAlienRandom::Update(const Time & time, GameObject & alien)
+AIModelAlienRandom::AIModelAlienRandom(GameObject& alien)
+	: alien(alien)
+{
+	auto& rigidBody = GetRigidBody(alien.objectId);
+	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
+}
+
+void AIModelAlienRandom::Update(const Time & time)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 
@@ -78,10 +110,16 @@ void AIModelAlienRandom::Update(const Time & time, GameObject & alien)
 	}
 }
 
-void AIModelAlienShy::Update(const Time & time, GameObject & alien)
+AIModelAlienShy::AIModelAlienShy(GameObject& alien)
+	: alien(alien)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
+	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
+}
 
+void AIModelAlienShy::Update(const Time & time)
+{
+	auto& rigidBody = GetRigidBody(alien.objectId);
 	const float maxTimeBetweenMovementChanges = 1.0f;
 	if (time.elapsedTime - timeOfLastMovementChange > maxTimeBetweenMovementChanges)
 	{
@@ -105,9 +143,84 @@ void AIModelAlienShy::Update(const Time & time, GameObject & alien)
 }
 
 
-void AIModelAlienChase::Update(const Time & time, GameObject& alien)
+AIModelAlienChase::AIModelAlienChase(GameObject & alien)
+	: alien(alien)
+{
+	auto& rigidBody = GetRigidBody(alien.objectId);
+	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
+}
+
+void AIModelAlienChase::Update(const Time & time)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	UpdateChaseVelocity(alien, rigidBody, time);
+}
+
+
+AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
+	: alien(alien)
+{
+	auto& rigidBody = GetRigidBody(alien.objectId);
+	rigidBody.angularVelocity = (GetRandomFloat01() < 0.5f ? -1.0f : 1.0f) * 2.0f;
+}
+
+void AIModelAlienMothership::Update(const Time& time)
+{
+	const float timeBetweenWaves = 5.0f;
+	const float timeBetweenLaunchesInWave = 0.02f;
+	const int numberOfLaunchesPerWave = 10;
+
+	float timeSinceLastLaunch = time.elapsedTime - timeOfLastLaunch;
+	if ((currentMode == LaunchingMode::Waiting) && (timeSinceLastLaunch >= timeBetweenWaves))
+	{
+		currentMode = LaunchingMode::Launching;
+	}
+
+	if (currentMode == LaunchingMode::Launching)
+	{
+		if (timeSinceLastLaunch > timeBetweenLaunchesInWave)
+		{
+			LaunchOffspring(alien);
+			++numberOfOffspringLaunchedThisWave;
+			if (numberOfOffspringLaunchedThisWave >= numberOfLaunchesPerWave)
+			{
+				currentMode = LaunchingMode::Waiting;
+				numberOfOffspringLaunchedThisWave = 0;
+			}
+			timeOfLastLaunch = time.elapsedTime;
+		}
+	}
+	// launch offspring
+}
+
+void AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
+{
+	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienOffspring>());
+	GameObject& child = aliens.back();
+
+	const auto& parentRB = GetRigidBody(parent.objectId);
+	Vector2 childHeading = GetRandomVectorOnCircle();
+	Vector2 childPosition = parentRB.position + 16.0f * childHeading;
+	Vector2 childFacing = childHeading;
+
+	AddRigidBody(child.objectId, childPosition, childFacing);
+	auto& collisionObject = AddCollisionObject(child.objectId, Vector2 { 16.0f, 16.0f });
+	collisionObject.layer = CollisionLayer::Alien;
+	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+
+	child.aiModel = CreateAI(child);
+}
+
+AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
+	: alien(alien)
+{
+}
+
+void AIModelAlienOffspring::Update(const Time & /*time*/)
+{
+	auto& rigidBody = GetRigidBody(alien.objectId);
+
+	const float speed = 40.0f;
+	rigidBody.velocity = speed * rigidBody.facing;
 }
 
