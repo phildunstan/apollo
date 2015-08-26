@@ -16,6 +16,7 @@ enum class Color : uint32_t
 	Yellow = 0xffff00ff,
 	Cyan = 0x00ffffff,
 	Purple = 0xff00ffff,
+	Orange = 0xff7f00ff,
 };
 
 void DebugDrawInit();

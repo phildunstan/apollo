@@ -21,6 +21,12 @@ const float TWO_PI = 2.0f * pi_internal();
 const float PI_OVER_TWO = pi_internal() / 2.0f;
 const float PI_OVER_FOUR = pi_internal() / 4.0f;
 
+template <typename T>
+constexpr T sqr(T x)
+{
+	return x * x;
+}
+
 
 template <typename T>
 constexpr T clamp(T x, T minValue, T maxValue)

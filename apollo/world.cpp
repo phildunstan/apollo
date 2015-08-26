@@ -72,20 +72,20 @@ Vector2 findGoodPlaceToSpawnAlien()
 
 void CreateAlienGameObject()
 {
-	float random = GetRandomFloat01();
-	if (random < 0.5f)
-	{
-		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
-	}
-	else if (random < 0.75f)
-	{
-		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
-	}
-	else if (random < 0.9f)
-	{
-		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
-	}
-	else
+	//float random = GetRandomFloat01();
+	//if (random < 0.5f)
+	//{
+	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
+	//}
+	//else if (random < 0.75f)
+	//{
+	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
+	//}
+	//else if (random < 0.9f)
+	//{
+	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
+	//}
+	//else
 	{
 		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienMothership>());
 	}
@@ -106,11 +106,11 @@ void InitWorld()
 {
 	CreatePlayerGameObject();
 
-	bullets.reserve(100);
-	aliens.reserve(100);
+	bullets.reserve(1000);
+	aliens.reserve(1000);
 
 	// create a bunch of aliens to shoot
-	const int numAliens = 12;
+	const int numAliens = 1;
 	for (int i = 0; i < numAliens; ++i)
 	{
 		CreateAlienGameObject();

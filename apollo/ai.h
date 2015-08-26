@@ -5,8 +5,6 @@
 struct Time;
 struct GameObject;
 
-const float maxAlienSpeed = 40.0f;
-
 class AIModel
 {
 public:
