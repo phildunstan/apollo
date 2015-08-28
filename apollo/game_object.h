@@ -3,10 +3,9 @@
 #include <memory>
 #include "ai.h"
 
-using ObjectId = uint64_t;
 ObjectId GetNextObjectId();
 
-enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy, AlienMothership, AlienOffspring };
+enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy, AlienMothership, AlienOffspring, AlienWallHugger };
 
 struct GameObject
 {

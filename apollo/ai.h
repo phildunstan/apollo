@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include "game.h"
 
 struct Time;
 struct GameObject;
@@ -62,13 +64,12 @@ public:
 	void Update(const Time& time) override;
 
 private:
-	static void LaunchOffspring(const GameObject& parent);
+	static ObjectId LaunchOffspring(const GameObject& parent);
 
 	GameObject& alien;
 	enum class LaunchingMode { Waiting, Launching };
 	LaunchingMode currentMode { LaunchingMode::Waiting };
-	float timeOfLastLaunch { 0.0f };
-	float numberOfOffspringLaunchedThisWave = 0;
+	std::vector<ObjectId> offspring;
 };
 
 
@@ -82,6 +83,16 @@ private:
 	GameObject& alien;
 };
 
+
+class AIModelAlienWallHugger : public AIModel
+{
+public:
+	AIModelAlienWallHugger(GameObject& alien);
+	void Update(const Time& time) override;
+
+private:
+	GameObject& alien;
+};
 
 
 

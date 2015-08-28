@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 
 #include "ai.h"
@@ -27,6 +28,8 @@ std::unique_ptr<AIModel> CreateAI(GameObject& gameObject)
 		return std::make_unique<AIModelAlienMothership>(gameObject);
 	case GameObjectType::AlienOffspring:
 		return std::make_unique<AIModelAlienOffspring>(gameObject);
+	case GameObjectType::AlienWallHugger:
+		return std::make_unique<AIModelAlienWallHugger>(gameObject);
 	};
 	return nullptr;
 }
@@ -165,38 +168,39 @@ AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = (GetRandomFloat01() < 0.5f ? -1.0f : 1.0f) * 2.0f;
+	offspring.reserve(20);
 }
 
-void AIModelAlienMothership::Update(const Time& time)
-{
-	const float timeBetweenWaves = 5.0f;
-	const float timeBetweenLaunchesInWave = 0.02f;
-	const int numberOfLaunchesPerWave = 10;
 
-	float timeSinceLastLaunch = time.elapsedTime - timeOfLastLaunch;
-	if ((currentMode == LaunchingMode::Waiting) && (timeSinceLastLaunch >= timeBetweenWaves))
+void AIModelAlienMothership::Update(const Time& /*time*/)
+{
+	const float timeBetweenLaunchesInWave = 0.02f;
+	const int numberOfLaunchesPerWave = 20;
+
+	if (currentMode == LaunchingMode::Waiting)
 	{
-		currentMode = LaunchingMode::Launching;
+		// remove all dead offspring from the list
+		auto isDead = [] (ObjectId objectId) {
+			return !GetGameObject(objectId).isAlive;
+		};
+		offspring.erase(remove_if(begin(offspring), end(offspring), isDead), end(offspring));
+
+		if (offspring.size() < 0.5f * numberOfLaunchesPerWave)
+			currentMode = LaunchingMode::Launching;
 	}
 
 	if (currentMode == LaunchingMode::Launching)
 	{
-		if (timeSinceLastLaunch > timeBetweenLaunchesInWave)
+		offspring.push_back(LaunchOffspring(alien));
+		if (offspring.size() >= numberOfLaunchesPerWave)
 		{
-			LaunchOffspring(alien);
-			++numberOfOffspringLaunchedThisWave;
-			if (numberOfOffspringLaunchedThisWave >= numberOfLaunchesPerWave)
-			{
-				currentMode = LaunchingMode::Waiting;
-				numberOfOffspringLaunchedThisWave = 0;
-			}
-			timeOfLastLaunch = time.elapsedTime;
+			currentMode = LaunchingMode::Waiting;
 		}
 	}
 	// launch offspring
 }
 
-void AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
+ObjectId AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
 {
 	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienOffspring>());
 	GameObject& child = aliens.back();
@@ -212,7 +216,10 @@ void AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
 	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
 
 	child.aiModel = CreateAI(child);
+
+	return child.objectId;
 }
+
 
 AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
 	: alien(alien)
@@ -224,11 +231,11 @@ void AIModelAlienOffspring::Update(const Time& time)
 	auto& rigidBody = GetRigidBody(alien.objectId);
 
 	// flocking parameters
-	const float cohesionMagnitude = 70.0f;
+	const float cohesionMagnitude = 1000.0f;
 	const float cohesionRadius = 50.0f;
 	const float alignmentMagnitude = 10.0f;
 	const float alignmentRadius = 50.0f;
-	const float separationMagnitude = 100.0f;
+	const float separationMagnitude = 500.0f;
 	const float separationRadius = 30.0f;
 
 	Vector2 totalCohesionForce { 0.0f, 0.0f };
@@ -295,29 +302,33 @@ void AIModelAlienOffspring::Update(const Time& time)
 	{
 		float distanceFactor = sqr(1.0f - (rigidBody.position.x - minWorld.x) / wallRepulsionRadius);
 		Vector2 repulsionForce = wallRepulsionMagnitude * distanceFactor * Vector2 { 1.0f, 0.0f };
+		//DebugDrawLine(rigidBody.position, rigidBody.position + repulsionForce * 1.0f, Color::White);
 		forces += repulsionForce;
 	}
 	else if (maxWorld.x - rigidBody.position.x < wallRepulsionRadius)
 	{
 		float distanceFactor = sqr(1.0f - (maxWorld.x - rigidBody.position.x) / wallRepulsionRadius);
 		Vector2 repulsionForce = wallRepulsionMagnitude * distanceFactor * Vector2 { -1.0f, 0.0f };
+		//DebugDrawLine(rigidBody.position, rigidBody.position + repulsionForce * 1.0f, Color::White);
 		forces += repulsionForce;
 	}
 	if (rigidBody.position.y - minWorld.y < wallRepulsionRadius)
 	{
 		float distanceFactor = sqr(1.0f - (rigidBody.position.y - minWorld.y) / wallRepulsionRadius);
 		Vector2 repulsionForce = wallRepulsionMagnitude * distanceFactor * Vector2 { 0.0f, 1.0f };
+		//DebugDrawLine(rigidBody.position, rigidBody.position + repulsionForce * 1.0f, Color::White);
 		forces += repulsionForce;
 	}
 	else if (maxWorld.y - rigidBody.position.y < wallRepulsionRadius)
 	{
 		float distanceFactor = sqr(1.0f - (maxWorld.y - rigidBody.position.y) / wallRepulsionRadius);
 		Vector2 repulsionForce = wallRepulsionMagnitude * distanceFactor * Vector2 { 0.0f, -1.0f };
-		repulsionForce += repulsionForce;
+		//DebugDrawLine(rigidBody.position, rigidBody.position + repulsionForce * 1.0f, Color::White);
+		forces += repulsionForce;
 	}
 
 	// additional force attracting the flock to the player
-	const float playerAttraction = 300.0f;
+	const float playerAttraction = 500.0f;
 	const auto& playerRigidBody = GetRigidBody(player.objectId);
 	float playerDistance = glm::distance(playerRigidBody.position, rigidBody.position);
 	if (playerDistance > 0.0f)
@@ -344,3 +355,13 @@ void AIModelAlienOffspring::Update(const Time& time)
 	}
 }
 
+
+AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
+	: alien(alien)
+{
+}
+
+void AIModelAlienWallHugger::Update(const Time& /*time*/)
+{
+	//auto& rigidBody = GetRigidBody(alien.objectId);
+}

@@ -2,6 +2,7 @@
 
 #include <iterator>
 #include <algorithm>
+#include <tuple>
 #include <unordered_set>
 
 #include "physics.h"
@@ -50,11 +51,10 @@ GameObject& GetGameObject(ObjectId objectId)
 }
 
 
-Vector2 findGoodPlaceToSpawnAlien()
+tuple<Vector2, Vector2> findRandomPlaceToSpawnAlien()
 {
 	Vector2 position { 0.0f, 0.0f };
 	bool haveGoodPosition = false;
-
 	do
 	{
 		position = GetRandomVectorInBox(minWorld + Vector2(40, 40), maxWorld - Vector2(40, 40));
@@ -66,39 +66,81 @@ Vector2 findGoodPlaceToSpawnAlien()
 			}) == end(collisionObjects);
 	} while (!haveGoodPosition);
 
-	return position;
+	Vector2 facing = GetRandomVectorOnCircle();
+
+	return make_tuple(position, facing);
 }
 
-
-void CreateAlienGameObject()
+tuple<Vector2, Vector2> findRandomPlaceAlongWallToSpawnWallHugger()
 {
-	//float random = GetRandomFloat01();
-	//if (random < 0.5f)
-	//{
-	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienShy>());
-	//}
-	//else if (random < 0.75f)
-	//{
-	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienChase>());
-	//}
-	//else if (random < 0.9f)
-	//{
-	//	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienRandom>());
-	//}
-	//else
-	{
-		aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienMothership>());
-	}
+	Vector2 position { 0.0f, 0.0f };
+	Vector2 facing = { 0.0f, 1.0f };
+	return make_tuple(position, facing);
+}
+
+template <GameObjectType AlienType>
+GameObject& CreateAlien()
+{
+	aliens.push_back(GameObject::CreateGameObject<AlienType>());
 	GameObject& alien = aliens.back();
 
-	Vector2 position = findGoodPlaceToSpawnAlien();
-	Vector2 facing = GetRandomVectorOnCircle();
+	Vector2 position { 0.0f, 0.0f };
+	Vector2 facing { 0.0f, 0.0f };
+	tie(position, facing) = findRandomPlaceToSpawnAlien();
+
 	AddRigidBody(alien.objectId, position, facing);
 	auto& collisionObject = AddCollisionObject(alien.objectId, Vector2 { 32.0f, 32.0f });
 	collisionObject.layer = CollisionLayer::Alien;
 	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
 
 	alien.aiModel = CreateAI(alien);
+
+	return alien;
+}
+
+template <>
+GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
+{
+	aliens.push_back(GameObject::CreateGameObject<GameObjectType::AlienWallHugger>());
+	GameObject& alien = aliens.back();
+
+	Vector2 position { 0.0f, 0.0f };
+	Vector2 facing { 0.0f, 0.0f };
+	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger();
+
+	AddRigidBody(alien.objectId, position, facing);
+	auto& collisionObject = AddCollisionObject(alien.objectId, Vector2 { 32.0f, 32.0f });
+	collisionObject.layer = CollisionLayer::Alien;
+	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+
+	alien.aiModel = CreateAI(alien);
+
+	return alien;
+}
+
+void CreateRandomAlien()
+{
+	float random = GetRandomFloat01();
+	if (random < 0.5f)
+	{
+		CreateAlien<GameObjectType::AlienShy>();
+	}
+	else if (random < 0.75f)
+	{
+		CreateAlien<GameObjectType::AlienChase>();
+	}
+	else if (random < 0.9f)
+	{
+		CreateAlien<GameObjectType::AlienRandom>();
+	}
+	else if (random < 0.95f)
+	{
+		CreateAlien<GameObjectType::AlienMothership>();
+	}
+	else
+	{
+		CreateAlien<GameObjectType::AlienWallHugger>();
+	}
 }
 
 
@@ -110,11 +152,12 @@ void InitWorld()
 	aliens.reserve(1000);
 
 	// create a bunch of aliens to shoot
-	const int numAliens = 1;
+	const int numAliens = 12;
 	for (int i = 0; i < numAliens; ++i)
 	{
-		CreateAlienGameObject();
+		CreateRandomAlien();
 	}
+	CreateAlien<GameObjectType::AlienWallHugger>();
 }
 
 
