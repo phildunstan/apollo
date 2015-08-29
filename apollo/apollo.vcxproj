@@ -44,6 +44,7 @@
     <Import Project="..\..\3rdparty\freetype\freetype.props" />
     <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
     <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
+    <Import Project="..\..\3rdparty\imgui\imgui.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -56,6 +57,7 @@
     <Import Project="..\..\3rdparty\freetype\freetype.props" />
     <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
     <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
+    <Import Project="..\..\3rdparty\imgui\imgui.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,6 +111,7 @@
     <ClCompile Include="rendering.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="sprite.cpp" />
+    <ClCompile Include="tweakables.cpp" />
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,6 +120,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="game_object.h" />
     <ClInclude Include="gl_helpers.h" />
+    <ClInclude Include="imconfig.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="physics.h" />
     <ClInclude Include="player.h" />
@@ -124,6 +128,7 @@
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="sdl_helpers.h" />
     <ClInclude Include="sprite.h" />
+    <ClInclude Include="tweakables.h" />
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>

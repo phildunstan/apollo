@@ -12,6 +12,7 @@
     <ClCompile Include="sprite.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="tweakables.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
@@ -27,6 +28,8 @@
     <ClInclude Include="sprite.h" />
     <ClInclude Include="world.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="imconfig.h" />
+    <ClInclude Include="tweakables.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />

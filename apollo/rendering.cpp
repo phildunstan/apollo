@@ -6,6 +6,9 @@
 #include "SDL.h"
 #include "SDL_image.h"
 
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+
 #pragma warning(push, 3)
 #pragma warning(disable: 4996)
 #define FONTSTASH_IMPLEMENTATION    // Expands implementation
@@ -20,13 +23,14 @@
 #include "game.h"
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
+#include "debug_draw.h"
 #include "math_helpers.h"
 #include "physics.h"
 #include "player.h"
 #include "sprite.h"
+#include "tweakables.h"
 #include "game_object.h"
 #include "world.h"
-#include "debug_draw.h"
 
 using namespace std;
 
@@ -89,8 +93,9 @@ bool LoadResources()
 
 
 
-void RenderWorld(const Time& /*time*/)
+void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 {
+	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(0, 0, 0.2f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -101,7 +106,7 @@ void RenderWorld(const Time& /*time*/)
 
 	glUseProgram(spriteShaderProgram);
 
-	auto projectionMatrix = glm::ortho(-320.0f, 320.0f, -240.0f, 240.0f);
+	auto projectionMatrix = glm::ortho(-windowWidth / 2.0f, windowWidth / 2.0f, -windowHeight / 2.0f, windowHeight / 2.0f, -10.0f, 10.0f);
 
 	// draw the bullets
 	for_each(begin(bullets), end(bullets), [&projectionMatrix] (const GameObject& bullet)
@@ -183,11 +188,6 @@ void RollCredits(const Time& time)
 	static float height = 250.0f;
 	height += -20.0f * time.deltaTime;
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
@@ -201,30 +201,29 @@ void RollCredits(const Time& time)
 
 
 
-void RenderUI(const Time& time)
+void RenderUI(const Time& time, int windowWidth, int windowHeight)
 {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(-320.0f, 320.0f, 240.0f, -240.0f, -100.0f, 100.0f);
+	glOrtho(-windowWidth / 2.0f, windowWidth / 2.0f, windowHeight / 2.0f, -windowHeight / 2.0f, -10.0f, 10.0f);
 
-	float dx = -320.0f, dy = -220.0f;
+	float dx = -windowWidth / 2.0f;
+	float dy = -windowHeight / 2.0f + 20.0f;
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
 	fonsDrawText(fontStash.get(), dx, dy, "Apollo", NULL);
 
 
-	dx = 180.0f;
+	dx = windowWidth / 2.0f - 160.0f;
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
 	char scoreText[24];
 	snprintf(scoreText, 24, "Score: %04d", playerScore);
 	fonsDrawText(fontStash.get(), dx, dy, scoreText, NULL);
-
-
 
 	if (IsGameOver())
 	{
@@ -233,3 +232,15 @@ void RenderUI(const Time& time)
 
 	CheckOpenGLErrors();
 }
+
+
+void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight*/)
+{
+	const auto& floatTweakables = Tweakables::GetInstance().GetFloatVariables();
+	for (const auto& floatTweakablePair : floatTweakables)
+	{
+		const auto& floatTweakable = floatTweakablePair.second;
+		ImGui::SliderFloat(floatTweakable.name, floatTweakable.variablePtr, floatTweakable.minValue, floatTweakable.maxValue);
+	}
+}
+

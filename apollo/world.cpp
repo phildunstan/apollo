@@ -12,8 +12,8 @@
 
 using namespace std;
 
-const Vector2 minWorld { -320.0f, -240.0f };
-const Vector2 maxWorld { 320.0f, 240.0f };
+const Vector2 minWorld { -640.0f, -360.0f };
+const Vector2 maxWorld { 640.0f, 360.0f };
 
 GameObject player { GameObject::CreateGameObject<GameObjectType::Player>() };
 vector<GameObject> bullets;

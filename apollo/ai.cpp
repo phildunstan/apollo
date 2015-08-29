@@ -6,6 +6,7 @@
 #include "game.h"
 #include "game_object.h"
 #include "physics.h"
+#include "tweakables.h"
 #include "world.h"
 
 using namespace std;
@@ -226,17 +227,18 @@ AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
 {
 }
 
+TWEAKABLE(float, cohesionMagnitude, 1000.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, cohesionRadius, 50.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, alignmentMagnitude, 10.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, alignmentRadius, 50.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, separationMagnitude, 500.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, separationRadius, 30.0f, 0.0f, 1000.0f);
+
 void AIModelAlienOffspring::Update(const Time& time)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 
 	// flocking parameters
-	const float cohesionMagnitude = 1000.0f;
-	const float cohesionRadius = 50.0f;
-	const float alignmentMagnitude = 10.0f;
-	const float alignmentRadius = 50.0f;
-	const float separationMagnitude = 500.0f;
-	const float separationRadius = 30.0f;
 
 	Vector2 totalCohesionForce { 0.0f, 0.0f };
 	Vector2 totalAlignmentForce { 0.0f, 0.0f };

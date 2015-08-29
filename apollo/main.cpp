@@ -12,6 +12,9 @@
 #include "SDL_image.h"
 #include "SDL_main.h"
 
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -24,10 +27,12 @@
 #include "debug_draw.h"
 #include "physics.h"
 #include "rendering.h"
-#include "World.h"
+#include "tweakables.h"
+#include "world.h"
 
 using namespace std;
 using namespace std::chrono;
+
 
 
 float playerMovementSpeed = 120.0f;
@@ -144,8 +149,8 @@ int main(int /*argc*/, char** /*argv*/)
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-	int windowWidth = 640;
-	int windowHeight = 480;
+	int windowWidth = 1280;
+	int windowHeight = 720;
 	auto window = unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(SDL_CreateWindow("apollo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 	if (!window)
 	{
@@ -160,7 +165,9 @@ int main(int /*argc*/, char** /*argv*/)
 	auto glContextDeleter = make_scope_exit([&glContext] () { SDL_GL_DeleteContext(glContext); });
 
 	glewInit();
-	glViewport(0, 0, windowWidth, windowHeight);
+
+	ImGui_ImplSdl_Init(window.get());
+	auto imguiSDLCleanup = make_scope_exit(ImGui_ImplSdl_Shutdown);
 
 	if (!LoadResources())
 	{
@@ -169,6 +176,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 	DebugDrawInit();
 	auto debugDrawCleanup = make_scope_exit([] () { DebugDrawShutdown(); });
+
+	bool renderDebugUI = false;
 
 	InitWorld();
 
@@ -183,15 +192,22 @@ int main(int /*argc*/, char** /*argv*/)
 		Time time { elapsedTime, deltaTime };
 		lastTime = currentTime;
 
-		SDL_Event e;
-		while (SDL_PollEvent(&e))
+		ImGui_ImplSdl_NewFrame(window.get());
+
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
 		{
-			switch (e.type)
+			switch (event.type)
 			{
 			case SDL_QUIT:
 				return 0;
 				break;
+			case SDL_KEYDOWN:
+				if (event.key.keysym.sym == SDLK_BACKQUOTE)
+					renderDebugUI = !renderDebugUI;
+				break;
 			}
+			ImGui_ImplSdl_ProcessEvent(&event);
 		}
 
 		if (joystick)
@@ -202,8 +218,16 @@ int main(int /*argc*/, char** /*argv*/)
 
 		UpdateWorld(time);
 
-		RenderWorld(time);
-		RenderUI(time);
+		RenderWorld(time, windowWidth, windowHeight);
+		RenderUI(time, windowWidth, windowHeight);
+
+		if (renderDebugUI)
+		{
+			RenderDebugUI(time, windowWidth, windowHeight);
+		}
+		ImGui::Render();
+		CheckOpenGLErrors();
+
 		SDL_GL_SwapWindow(window.get());
 	}
 
