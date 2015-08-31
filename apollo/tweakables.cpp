@@ -4,48 +4,10 @@
 
 using namespace std;
 
+
 Tweakables::AutoRegister::~AutoRegister()
 {
 	Tweakables::GetInstance().Deregister(m_variablePtr);
-}
-
-
-bool Tweakables::Register(const char* name, float& variable, float minValue, float maxValue)
-{
-	if (m_floats.find(name) != m_floats.end())
-	{
-		char msg[128];
-		snprintf(msg, 128, "Tweakable variable already exists with name %s", name);
-		fprintf(stderr, msg);
-		return false;
-	}
-
-	m_floats[name] = { name, &variable, minValue, maxValue };
-	return true;
-}
-
-float Tweakables::GetValue(const char* name)
-{
-	const auto iter = m_floats.find(name);
-	if (iter == end(m_floats))
-	{
-		char msg[128];
-		snprintf(msg, 128, "Tweakable %s was not found in the float variables", name);
-		fprintf(stderr, msg);
-	}
-	return *iter->second.variablePtr;
-}
-
-void Tweakables::SetValue(const char* name, float value)
-{
-	auto iter = m_floats.find(name);
-	if (iter == end(m_floats))
-	{
-		char msg[128];
-		snprintf(msg, 128, "Tweakable %s was not found in the float variables", name);
-		fprintf(stderr, msg);
-	}
-	*iter->second.variablePtr = value;
 }
 
 
@@ -59,4 +21,79 @@ void Tweakables::Deregister(void* variablePtr)
 	{
 		m_floats.erase(floatIter);
 	}
+}
+
+
+namespace
+{
+	template <typename TweakableType, typename MapType>
+	TweakableType GetValueFromMap(const char* name, const MapType& map)
+	{
+		const auto iter = map.find(name);
+		assert(iter != end(map));
+		return *iter->second.variablePtr;
+	}
+
+	template <typename TweakableType, typename MapType>
+	void SetValueInMap(const char* name, TweakableType value, MapType& map)
+	{
+		auto iter = map.find(name);
+		assert(iter != end(map));
+		*iter->second.variablePtr = value;
+	}
+}
+
+
+int Tweakables::GetInt(const char* name)
+{
+	return GetValueFromMap<int>(name, m_ints);
+}
+
+void Tweakables::SetInt(const char* name, int value)
+{
+	SetValueInMap(name, value, m_ints);
+}
+
+
+float Tweakables::GetFloat(const char* name)
+{
+	return GetValueFromMap<float>(name, m_floats);
+}
+
+void Tweakables::SetFloat(const char* name, float value)
+{
+	SetValueInMap(name, value, m_floats);
+}
+
+
+Vector2 Tweakables::GetVector2(const char* name)
+{
+	return GetValueFromMap<Vector2>(name, m_vector2s);
+}
+
+void Tweakables::SetVector2(const char* name, Vector2 value)
+{
+	SetValueInMap(name, value, m_vector2s);
+}
+
+
+Vector3 Tweakables::GetVector3(const char* name)
+{
+	return GetValueFromMap<Vector3>(name, m_vector3s);
+}
+
+void Tweakables::SetVector3(const char* name, Vector3 value)
+{
+	SetValueInMap(name, value, m_vector3s);
+}
+
+
+Color Tweakables::GetColor(const char* name)
+{
+	return GetValueFromMap<Color>(name, m_colors);
+}
+
+void Tweakables::SetColor(const char* name, Color value)
+{
+	SetValueInMap(name, value, m_colors);
 }

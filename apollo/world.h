@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
 #include <cassert>
 
@@ -39,3 +40,6 @@ GameObject GameObject::CreateGameObject()
 
 
 std::vector<ObjectId> GetAliensInCircle(const Vector2& center, float radius);
+
+float GetPositionAlongWallCoordFromPositionAndFacing(const Vector2& position, const Vector2& facing);
+std::tuple<Vector2, Vector2> GetPositionAndFacingFromWallCoord(float p, const Vector2& collisionBoxDimensions);

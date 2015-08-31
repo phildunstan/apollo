@@ -71,11 +71,12 @@ tuple<Vector2, Vector2> findRandomPlaceToSpawnAlien()
 	return make_tuple(position, facing);
 }
 
-tuple<Vector2, Vector2> findRandomPlaceAlongWallToSpawnWallHugger()
+void CreateAlienPhysics(ObjectId objectId, const Vector2& position, const Vector2& facing, const Vector2& collisionBoxDimensions)
 {
-	Vector2 position { 0.0f, 0.0f };
-	Vector2 facing = { 0.0f, 1.0f };
-	return make_tuple(position, facing);
+	AddRigidBody(objectId, position, facing);
+	auto& collisionObject = AddCollisionObject(objectId, collisionBoxDimensions);
+	collisionObject.layer = CollisionLayer::Alien;
+	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
 }
 
 template <GameObjectType AlienType>
@@ -87,15 +88,121 @@ GameObject& CreateAlien()
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
 	tie(position, facing) = findRandomPlaceToSpawnAlien();
-
-	AddRigidBody(alien.objectId, position, facing);
-	auto& collisionObject = AddCollisionObject(alien.objectId, Vector2 { 32.0f, 32.0f });
-	collisionObject.layer = CollisionLayer::Alien;
-	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+	CreateAlienPhysics(alien.objectId, position, facing, Vector2 { 32.0f, 32.0f });
 
 	alien.aiModel = CreateAI(alien);
 
 	return alien;
+}
+
+
+float GetPositionAlongWallCoordFromPositionAndFacing(const Vector2& position, const Vector2& facing)
+{
+	float wallWidth = maxWorld.x - minWorld.x;
+	float wallHeight = maxWorld.y - minWorld.y;
+	float totalWallLength = 2 * wallWidth + 2 * wallHeight;
+
+	if (IsSimilar(facing, Vector2 { 0, 1 }))
+	{
+		// position along bottom wall, p increasing to the right
+		float p = position.x - minWorld.x;
+		if (p < 0.0f)
+			p += totalWallLength;
+		return p;
+	}
+
+	if (IsSimilar(facing, Vector2 { -1, 0 }))
+	{
+		// position along right wall, p increasing upwards
+		float p = wallWidth + position.y - minWorld.y;
+		return p;
+	}
+
+	if (IsSimilar(facing, Vector2 { 0, -1 }))
+	{
+		// position along top wall, p increasing to the left
+		float p = wallWidth + wallHeight + maxWorld.x - position.x;
+		return p;
+	}
+
+	assert(IsSimilar(facing, Vector2 { 1, 0 }));
+	{
+		// position along left wall, p increasing downwards
+		float p = wallWidth + wallHeight + wallWidth + maxWorld.y - position.y;
+		if (p > totalWallLength)
+			p -= totalWallLength;
+		return p;
+	}
+}
+
+tuple<Vector2, Vector2> GetPositionAndFacingFromWallCoord(float p, const Vector2& collisionBoxDimensions)
+{
+	float wallWidth = maxWorld.x - minWorld.x;
+	float wallHeight = maxWorld.y - minWorld.y;
+
+	if (p < wallWidth)
+	{
+		// position along bottom wall, p increasing to the right
+		Vector2 position = Vector2 { minWorld.x + p,  minWorld.y + collisionBoxDimensions.y / 2.0f };
+		Vector2 facing = Vector2 { 0.0f, 1.0f };
+		return make_tuple(position, facing);
+	}
+	p -= wallWidth;
+
+	if (p < wallHeight)
+	{
+		// position along right wall, p increasing upwards
+		Vector2 position = Vector2 { maxWorld.x - collisionBoxDimensions.y / 2.0f,  minWorld.y + p };
+		Vector2 facing = Vector2 { -1.0f, 0.0f };
+		return make_tuple(position, facing);
+	}
+	p -= wallHeight;
+
+	if (p < wallWidth)
+	{
+		// position along top wall, p increasing to the left
+		Vector2 position = Vector2 { maxWorld.x - p,  maxWorld.y - collisionBoxDimensions.y / 2.0f };
+		Vector2 facing = Vector2 { 0.0f, -1.0f };
+		return make_tuple(position, facing);
+	}
+	p -= wallWidth;
+
+	assert(p < wallHeight);
+	{
+		// position along left wall, p increasing downwards
+		Vector2 position = Vector2 { minWorld.x + collisionBoxDimensions.y / 2.0f,  maxWorld.y - p };
+		Vector2 facing = Vector2 { 1.0f, 0.0f };
+		return make_tuple(position, facing);
+	}
+}
+
+tuple<Vector2, Vector2> findRandomPlaceAlongWallToSpawnWallHugger(const Vector2& collisionBoxDimensions)
+{
+	Vector2 position { 0.0f, 0.0f };
+	Vector2 facing = { 0.0f, 1.0f };
+
+	bool haveGoodPosition = false;
+	do
+	{
+		// treat the 4 walls as a single line (bottom, right, top, left)
+		// generate a random position along that line,
+		// then map it back to the original walls.
+		float wallWidth = maxWorld.x - minWorld.x;
+		float wallHeight = maxWorld.y - minWorld.y;
+		float wallLength = 2 * wallWidth + 2 * wallHeight;
+		float p = GetRandomFloat01() * wallLength;
+
+		tie(position, facing) = GetPositionAndFacingFromWallCoord(p, collisionBoxDimensions);
+
+		haveGoodPosition = glm::distance(GetRigidBody(player.objectId).position, position) > 100.0f;
+		haveGoodPosition = haveGoodPosition &&
+			find_if(begin(collisionObjects), end(collisionObjects), [&position] (const CollisionObject& existingObject)
+		{
+			return glm::distance(existingObject.position, position) < 50.0f;
+		}) == end(collisionObjects);
+	} while (!haveGoodPosition);
+
+	return make_tuple(position, facing);
 }
 
 template <>
@@ -106,12 +213,9 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
-	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger();
-
-	AddRigidBody(alien.objectId, position, facing);
-	auto& collisionObject = AddCollisionObject(alien.objectId, Vector2 { 32.0f, 32.0f });
-	collisionObject.layer = CollisionLayer::Alien;
-	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
+	Vector2 collisionBoxDimensions { 32.0f, 32.0f };
+	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoxDimensions);
+	CreateAlienPhysics(alien.objectId, position, facing, collisionBoxDimensions);
 
 	alien.aiModel = CreateAI(alien);
 

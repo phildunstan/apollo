@@ -70,6 +70,9 @@ struct CollisionObject
 extern std::vector<RigidBody> rigidBodies;
 extern std::vector<CollisionObject> collisionObjects;
 
+
+void InitPhysics();
+
 RigidBody& AddRigidBody(ObjectId objectId, const Vector2& position, const Vector2& facing);
 RigidBody& GetRigidBody(ObjectId objectId);
 void UpdateRigidBodies(const Time& time);

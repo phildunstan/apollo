@@ -6,8 +6,29 @@ int playerScore { 0 };
 
 void IncrementPlayerScore(const GameObject& gameObject)
 {
-	if ((gameObject.type == GameObjectType::AlienChase) ||
-		(gameObject.type == GameObjectType::AlienRandom) ||
-		(gameObject.type == GameObjectType::AlienShy))
-		++playerScore;
+	switch (gameObject.type)
+	{
+	case GameObjectType::Player:
+		break;
+	case GameObjectType::Bullet:
+		break;
+	case GameObjectType::AlienRandom:
+		playerScore += 10;
+		break;
+	case GameObjectType::AlienChase:
+		playerScore += 10;
+		break;
+	case GameObjectType::AlienShy:
+		playerScore += 10;
+		break;
+	case GameObjectType::AlienMothership:
+		playerScore += 25;
+		break;
+	case GameObjectType::AlienOffspring:
+		playerScore += 1;
+		break;
+	case GameObjectType::AlienWallHugger:
+		playerScore += 10;
+		break;
+	}
 }

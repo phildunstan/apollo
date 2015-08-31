@@ -5,7 +5,17 @@
 
 ObjectId GetNextObjectId();
 
-enum class GameObjectType : int { Player, Bullet, AlienRandom, AlienChase, AlienShy, AlienMothership, AlienOffspring, AlienWallHugger };
+enum class GameObjectType : int
+{
+	Player,
+	Bullet,
+	AlienRandom,
+	AlienChase,
+	AlienShy,
+	AlienMothership,
+	AlienOffspring,
+	AlienWallHugger
+};
 
 struct GameObject
 {

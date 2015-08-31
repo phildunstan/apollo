@@ -35,9 +35,14 @@ constexpr T clamp(T x, T minValue, T maxValue)
 }
 
 
-inline bool IsSimilar(float x, float y, float epsilon = 1e-4f)
+inline bool IsSimilar(float a, float b, float epsilon = 1e-4f)
 {
-	return std::abs(x - y) <= epsilon;
+	return std::abs(a - b) <= epsilon;
+}
+
+inline bool IsSimilar(Vector2 a, Vector2 b, float epsilon = 1e-4f)
+{
+	return (std::abs(a.x - b.x) <= epsilon) && (std::abs(a.y - b.y) <= epsilon);
 }
 
 template <typename VectorT>

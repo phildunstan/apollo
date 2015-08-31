@@ -145,13 +145,17 @@ int main(int /*argc*/, char** /*argv*/)
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+
+	// use an OpenGL ES 3.0 context
+	// SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	// SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
 	int windowWidth = 1280;
 	int windowHeight = 720;
-	auto window = unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(SDL_CreateWindow("apollo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
+	int windowLeft = 2560 - windowWidth; // hardcode a window position for the live stream
+	int windowRight = 1080 - windowHeight;
+	auto window = unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(SDL_CreateWindow("apollo", windowLeft, windowRight, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 	if (!window)
 	{
 		printf("Unable to create SDL window: %s\n", SDL_GetError());
@@ -179,6 +183,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 	bool renderDebugUI = false;
 
+	InitPhysics();
 	InitWorld();
 
 	auto startTime = high_resolution_clock::now();
@@ -189,6 +194,7 @@ int main(int /*argc*/, char** /*argv*/)
 		auto currentTime = high_resolution_clock::now();
 		auto elapsedTime = duration_cast<duration<float>>(currentTime - startTime).count();
 		auto deltaTime = duration_cast<duration<float>>(currentTime - lastTime).count();
+		deltaTime = std::min(deltaTime, 0.1f); // cap deltaTime to 0.1s
 		Time time { elapsedTime, deltaTime };
 		lastTime = currentTime;
 

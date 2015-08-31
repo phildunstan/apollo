@@ -91,6 +91,10 @@ public:
 	void Update(const Time& time) override;
 
 private:
+
+	enum class MovementMode { Stationary, SlideLeft, SlideRight };
+	MovementMode currentMovementMode { MovementMode::Stationary };
+
 	GameObject& alien;
 };
 

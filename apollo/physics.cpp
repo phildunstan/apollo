@@ -11,6 +11,14 @@ using namespace std;
 vector<RigidBody> rigidBodies;
 vector<CollisionObject> collisionObjects;
 
+
+void InitPhysics()
+{
+	rigidBodies.reserve(1000);
+	collisionObjects.reserve(1000);
+}
+
+
 RigidBody& GetRigidBody(ObjectId objectId)
 {
 	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
@@ -210,10 +218,10 @@ vector<ObjectId> UpdateCollision(const Time& /*time*/)
 		auto& collisionObjectI = collisionObjects[i];
 		if (collisionObjectI.layer == CollisionLayer::PendingDestruction)
 			continue;
-		if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
-		{
-			collidingObjects.push_back(collisionObjectI.objectId);
-		}
+		//if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
+		//{
+		//	collidingObjects.push_back(collisionObjectI.objectId);
+		//}
 		for (int j = i + 1; j < collisionObjects.size(); ++j)
 		{
 			auto& collisionObjectJ = collisionObjects[j];

@@ -236,11 +236,30 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 
 void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight*/)
 {
+	const auto& intTweakables = Tweakables::GetInstance().GetIntVariables();
+	for (const auto& intTweakablePair : intTweakables)
+	{
+		const auto& intTweakable = intTweakablePair.second;
+		ImGui::SliderInt(intTweakable.name, intTweakable.variablePtr, intTweakable.minValue, intTweakable.maxValue);
+	}
+
 	const auto& floatTweakables = Tweakables::GetInstance().GetFloatVariables();
 	for (const auto& floatTweakablePair : floatTweakables)
 	{
 		const auto& floatTweakable = floatTweakablePair.second;
 		ImGui::SliderFloat(floatTweakable.name, floatTweakable.variablePtr, floatTweakable.minValue, floatTweakable.maxValue);
 	}
+
+	const auto& vector2Tweakables = Tweakables::GetInstance().GetVector2Variables();
+	for (const auto& vector2TweakablePair : vector2Tweakables)
+	{
+		const auto& vector2Tweakable = vector2TweakablePair.second;
+		char name[64];
+		snprintf(name, 64, "%s_x", vector2Tweakable.name);
+		ImGui::SliderFloat(name, &vector2Tweakable.variablePtr->x, vector2Tweakable.minValue.x, vector2Tweakable.maxValue.x);
+		snprintf(name, 64, "%s_y", vector2Tweakable.name);
+		ImGui::SliderFloat(name, &vector2Tweakable.variablePtr->y, vector2Tweakable.minValue.y, vector2Tweakable.maxValue.y);
+	}
+
 }
 

@@ -363,7 +363,37 @@ AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
 {
 }
 
+TWEAKABLE(float, wallHuggerSpeed, 300.0f, 0.0f, 1000.0f);
+
 void AIModelAlienWallHugger::Update(const Time& /*time*/)
 {
-	//auto& rigidBody = GetRigidBody(alien.objectId);
+	if (currentMovementMode == MovementMode::Stationary)
+	{
+		currentMovementMode = (GetRandomFloat01() < 0.5f) ? MovementMode::SlideLeft : MovementMode::SlideRight;
+	}
+
+	auto& rigidBody = GetRigidBody(alien.objectId);
+	Vector2 position = rigidBody.position;
+	Vector2 facing = rigidBody.facing;
+
+	float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
+	tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f } );
+
+	switch (currentMovementMode)
+	{
+	case MovementMode::Stationary:
+		rigidBody.velocity = Vector2 { 0.0f, 0.0f };
+		break;
+	case MovementMode::SlideLeft:
+		rigidBody.velocity = Vector2 { -facing.y, facing.x };
+		break;
+	case MovementMode::SlideRight:
+		rigidBody.velocity = Vector2 { facing.y, -facing.x };
+		break;
+	}
+
+	rigidBody.position = position;
+	rigidBody.facing = facing;
+	assert(glm::length(rigidBody.velocity) > 0.0f);
+	rigidBody.velocity = wallHuggerSpeed * glm::normalize(rigidBody.velocity);
 }
