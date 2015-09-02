@@ -153,8 +153,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 	int windowWidth = 1280;
 	int windowHeight = 720;
-	int windowLeft = 2560 - windowWidth; // hardcode a window position for the live stream
-	int windowRight = 1080 - windowHeight;
+	int windowLeft = 2560 - windowWidth -10; // hardcode a window position for the live stream
+	int windowRight = 1080 - windowHeight - 10;
 	auto window = unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)>(SDL_CreateWindow("apollo", windowLeft, windowRight, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 	if (!window)
 	{

@@ -41,7 +41,7 @@ CollisionObject& GetCollisionObject(ObjectId objectId)
 vector<Vector2> GatherBoundingBoxVertices(const Vector2& position, const Vector2& facing, const Vector2& dimensions)
 {
 	Vector2 yAxis = facing;
-	Vector2 xAxis = PerpendicularVector2D(yAxis);
+	Vector2 xAxis = PerpendicularRightVector2D(yAxis);
 	Vector2 halfDimensions = 0.5f * dimensions;
 	vector<Vector2> vertices {
 		position - halfDimensions.x * xAxis - halfDimensions.y * yAxis,
@@ -77,10 +77,10 @@ bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObje
 	edgeNormals.reserve(4);
 	assert(IsUnitLength(objectA.facing));
 	edgeNormals.push_back(objectA.facing);
-	edgeNormals.push_back(PerpendicularVector2D(objectA.facing));
+	edgeNormals.push_back(PerpendicularRightVector2D(objectA.facing));
 	assert(IsUnitLength(objectB.facing));
 	edgeNormals.push_back(objectB.facing);
-	edgeNormals.push_back(PerpendicularVector2D(objectB.facing));
+	edgeNormals.push_back(PerpendicularRightVector2D(objectB.facing));
 
 	for (const auto& edgeNormal : edgeNormals)
 	{
@@ -132,7 +132,7 @@ bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
 	vector<Vector2> objectVertices = GatherObjectVertices(object);
 	for (const auto& vertex : objectVertices)
 	{
-		if (!AABBContains(minWorld, maxWorld, vertex))
+		if (!AABBContains(minWorld - Vector2 { 32.0f, 32.0f }, maxWorld + Vector2 { 32.0f, 32.0f }, vertex))
 			return true;
 	}
 	return false;
@@ -218,10 +218,10 @@ vector<ObjectId> UpdateCollision(const Time& /*time*/)
 		auto& collisionObjectI = collisionObjects[i];
 		if (collisionObjectI.layer == CollisionLayer::PendingDestruction)
 			continue;
-		//if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
-		//{
-		//	collidingObjects.push_back(collisionObjectI.objectId);
-		//}
+		if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
+		{
+			collidingObjects.push_back(collisionObjectI.objectId);
+		}
 		for (int j = i + 1; j < collisionObjects.size(); ++j)
 		{
 			auto& collisionObjectJ = collisionObjects[j];

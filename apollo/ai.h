@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include "game.h"
+#include "math_helpers.h"
 
 struct Time;
 struct GameObject;
@@ -92,10 +93,12 @@ public:
 
 private:
 
-	enum class MovementMode { Stationary, SlideLeft, SlideRight };
+	enum class MovementMode { Stationary, SlideLeft, SlideRight, Crossing };
 	MovementMode currentMovementMode { MovementMode::Stationary };
 
 	GameObject& alien;
+
+	Vector2 wallStartPosition { 0.0f, 0.0f };
 };
 
 

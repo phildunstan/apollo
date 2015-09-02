@@ -11,8 +11,8 @@
 #include "physics.h"
 
 
-extern const Vector2 minWorld;
-extern const Vector2 maxWorld;
+extern Vector2 minWorld;
+extern Vector2 maxWorld;
 
 // World data
 extern GameObject player;
@@ -38,6 +38,7 @@ GameObject GameObject::CreateGameObject()
 	return object;
 }
 
+void CreateWall(const Vector2& startPosition, const Vector2& endPosition);
 
 std::vector<ObjectId> GetAliensInCircle(const Vector2& center, float radius);
 

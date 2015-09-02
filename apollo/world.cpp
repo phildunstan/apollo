@@ -12,8 +12,8 @@
 
 using namespace std;
 
-const Vector2 minWorld { -640.0f, -360.0f };
-const Vector2 maxWorld { 640.0f, 360.0f };
+Vector2 minWorld { -640.0f, -360.0f };
+Vector2 maxWorld { 640.0f, 360.0f };
 
 GameObject player { GameObject::CreateGameObject<GameObjectType::Player>() };
 vector<GameObject> bullets;
@@ -167,7 +167,7 @@ tuple<Vector2, Vector2> GetPositionAndFacingFromWallCoord(float p, const Vector2
 	}
 	p -= wallWidth;
 
-	assert(p < wallHeight);
+	assert(p <= wallHeight);
 	{
 		// position along left wall, p increasing downwards
 		Vector2 position = Vector2 { minWorld.x + collisionBoxDimensions.y / 2.0f,  maxWorld.y - p };
@@ -337,6 +337,38 @@ void FirePlayerBullet()
 	const float bulletSpeed = 1200.0f;
 	Vector2 bulletVelocity = bulletSpeed * playerRB.facing;
 	CreateBullet(bulletPosition, bulletVelocity, CollisionLayer::PlayerBullet, CollisionLayer::Alien);
+}
+
+
+void CreateWall(const Vector2& startPosition, const Vector2& endPosition)
+{
+	RigidBody& playerRB = GetRigidBody(player.objectId);
+	Vector2 playerPosition = playerRB.position;
+	if (IsSimilar(startPosition.y, endPosition.y))
+	{
+		// horizontal wall
+		if (startPosition.y < playerPosition.y)
+		{
+			minWorld.y = startPosition.y;
+		}
+		else
+		{
+			maxWorld.y = startPosition.y;
+		}
+	}
+	else
+	{
+		assert(IsSimilar(startPosition.x, endPosition.x));
+		// vertical wall
+		if (startPosition.x < playerPosition.x)
+		{
+			minWorld.x = startPosition.x;
+		}
+		else
+		{
+			maxWorld.x = startPosition.x;
+		}
+	}
 }
 
 

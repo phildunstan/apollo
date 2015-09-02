@@ -4,6 +4,7 @@
 #include <random>
 #include "glm/glm.hpp"
 #include "glm/gtc/constants.hpp"
+#include "glm/gtc/epsilon.hpp"
 
 using Vector2 = glm::vec2;
 using Vector3 = glm::vec3;
@@ -37,12 +38,23 @@ constexpr T clamp(T x, T minValue, T maxValue)
 
 inline bool IsSimilar(float a, float b, float epsilon = 1e-4f)
 {
-	return std::abs(a - b) <= epsilon;
+	float sizeA = std::abs(a);
+	float sizeB = std::abs(b);
+	if (sizeA > sizeB)
+		return glm::epsilonEqual(a, b, sizeA * epsilon);
+	else
+		return glm::epsilonEqual(a, b, sizeB * epsilon);
 }
 
-inline bool IsSimilar(Vector2 a, Vector2 b, float epsilon = 1e-4f)
+template <typename VectorT>
+inline bool IsSimilar(const VectorT& a, const VectorT& b, float epsilon = 1e-4f)
 {
-	return (std::abs(a.x - b.x) <= epsilon) && (std::abs(a.y - b.y) <= epsilon);
+	float sizeA = glm::length(a);
+	float sizeB = glm::length(b);
+	if (sizeA > sizeB)
+		return glm::all(glm::epsilonEqual(a, b, sizeA * epsilon));
+	else
+		return glm::all(glm::epsilonEqual(a, b, sizeB * epsilon));
 }
 
 template <typename VectorT>
@@ -51,12 +63,7 @@ inline bool IsUnitLength(const VectorT& v, float epsilon = 1e-4f)
 	return IsSimilar(glm::length(v), 1.0f, epsilon);
 }
 
-inline Vector3 PerpendicularVector2D(const Vector3& v)
-{
-	return Vector3{ v.y, -v.x, v.z };
-}
-
-inline Vector2 PerpendicularVector2D(const Vector2& v)
+inline Vector2 PerpendicularRightVector2D(const Vector2& v)
 {
 	return Vector2 { v.y, -v.x};
 }

@@ -364,36 +364,58 @@ AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
 }
 
 TWEAKABLE(float, wallHuggerSpeed, 300.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, wallHuggerCrossingProbability, 0.01f, 0.0f, 0.01f);
 
 void AIModelAlienWallHugger::Update(const Time& /*time*/)
 {
+	auto& rigidBody = GetRigidBody(alien.objectId);
+	Vector2 position = rigidBody.position;
+	Vector2 facing = rigidBody.facing;
+
 	if (currentMovementMode == MovementMode::Stationary)
 	{
 		currentMovementMode = (GetRandomFloat01() < 0.5f) ? MovementMode::SlideLeft : MovementMode::SlideRight;
 	}
 
-	auto& rigidBody = GetRigidBody(alien.objectId);
-	Vector2 position = rigidBody.position;
-	Vector2 facing = rigidBody.facing;
-
-	float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
-	tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f } );
-
-	switch (currentMovementMode)
+	if (currentMovementMode != MovementMode::Crossing)
 	{
-	case MovementMode::Stationary:
-		rigidBody.velocity = Vector2 { 0.0f, 0.0f };
-		break;
-	case MovementMode::SlideLeft:
-		rigidBody.velocity = Vector2 { -facing.y, facing.x };
-		break;
-	case MovementMode::SlideRight:
-		rigidBody.velocity = Vector2 { facing.y, -facing.x };
-		break;
+		float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
+		tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f });
+
+		if (currentMovementMode == MovementMode::SlideLeft)
+			rigidBody.velocity = wallHuggerSpeed * Vector2 { -facing.y, facing.x };
+		else // if (currentMovementMode == MovementMode::SlideRight)
+			rigidBody.velocity = wallHuggerSpeed * Vector2 { facing.y, -facing.x };
+
+
+		if (GetRandomFloat01() < wallHuggerCrossingProbability)
+		{
+			currentMovementMode = MovementMode::Crossing;
+			wallStartPosition = rigidBody.position;
+			rigidBody.velocity = wallHuggerSpeed * facing;
+		}
+	}
+
+	if (currentMovementMode == MovementMode::Crossing)
+	{
+		if (((facing.x < 0) && (position.x < minWorld.x)) ||
+			((facing.x > 0) && (position.x > maxWorld.x)) ||
+			((facing.y < 0) && (position.y < minWorld.y)) ||
+			((facing.y > 0) && (position.y > maxWorld.y)))
+		{
+			// when we hit the other side, reverse the facing so that GetPositionAlongWallCoordFromPositionAndFacing works
+			facing = -facing;
+			float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
+			tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f });
+
+			Vector2 wallFinishPosition = position;
+			CreateWall(wallStartPosition, wallFinishPosition);
+
+			currentMovementMode = MovementMode::Stationary;
+			rigidBody.velocity = Vector2 { 0.0f, 0.0f };
+		}
 	}
 
 	rigidBody.position = position;
 	rigidBody.facing = facing;
-	assert(glm::length(rigidBody.velocity) > 0.0f);
-	rigidBody.velocity = wallHuggerSpeed * glm::normalize(rigidBody.velocity);
 }

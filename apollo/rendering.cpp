@@ -108,6 +108,12 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 
 	auto projectionMatrix = glm::ortho(-windowWidth / 2.0f, windowWidth / 2.0f, -windowHeight / 2.0f, windowHeight / 2.0f, -10.0f, 10.0f);
 
+	// draw the walls
+	DebugDrawLine(Vector2 { minWorld.x, minWorld.y }, Vector2 { minWorld.x, maxWorld.y }, Color::White);
+	DebugDrawLine(Vector2 { minWorld.x, minWorld.y }, Vector2 { maxWorld.x, minWorld.y }, Color::White);
+	DebugDrawLine(Vector2 { maxWorld.x, maxWorld.y }, Vector2 { minWorld.x, maxWorld.y }, Color::White);
+	DebugDrawLine(Vector2 { maxWorld.x, maxWorld.y }, Vector2 { maxWorld.x, minWorld.y }, Color::White);
+
 	// draw the bullets
 	for_each(begin(bullets), end(bullets), [&projectionMatrix] (const GameObject& bullet)
 	{
