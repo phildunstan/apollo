@@ -2,12 +2,13 @@
 
 #include <cstdio>
 #include <unordered_map>
+#include <vector>
 #include "math_helpers.h"
 #include "rendering.h"
 
-#define TWEAKABLE(type, variable, initial_value, min, max)  \
+#define TWEAKABLE(type, variable, text, initial_value, min, max)  \
 	type variable { initial_value }; \
-	Tweakables::AutoRegister auto_tweakable_##variable(#variable, variable, min, max)
+	Tweakables::AutoRegister auto_tweakable_##variable(text, variable, min, max)
 
 #define REGISTER_TWEAKABLE(name, variable, min, max) Tweakables::GetInstance().Register(name, variable, min, max)
 
@@ -15,48 +16,68 @@
 class Tweakables
 {
 public:
-	template <typename T>
-	struct Tweakable
+	template <typename TweakableType>
+	bool Tweakables::Register(const char* name, TweakableType& variable, TweakableType minValue, TweakableType maxValue)
 	{
-		const char* name;
-		T* variablePtr;
-		T minValue;
-		T maxValue;
-	};
-
-	template <typename T>
-	bool Register(const char* name, T& variable, T minValue, T maxValue)
-	{
-		auto& map = GetTweakablesMap<T>();
-		assert(map.find(name) == end(map));
-		map[name] = { name, &variable, minValue, maxValue };
+		InsertTweakable(name, &variable, minValue, maxValue);
 		return true;
 	}
 
-	void Deregister(void* variablePtr);
 
 	// setters and getters for each type
-	const auto GetIntVariables() const { return m_ints; }
-	int GetInt(const char* name);
+	int GetInt(const char* name) const;
 	void SetInt(const char* name, int value);
 
-	const auto& GetFloatVariables() const { return m_floats; }
-	float GetFloat(const char* name);
+	float GetFloat(const char* name) const;
 	void SetFloat(const char* name, float value);
 
-	const auto& GetVector2Variables() const { return m_vector2s; }
-	Vector2 GetVector2(const char* name);
+	Vector2 GetVector2(const char* name) const;
 	void SetVector2(const char* name, Vector2 value);
 
-	const auto& GetVector3Variables() const { return m_vector3s; }
-	Vector3 GetVector3(const char* name);
+	Vector3 GetVector3(const char* name) const;
 	void SetVector3(const char* name, Vector3 value);
 
-	const auto& GetColorVariables() const { return m_colors; }
-	Color GetColor(const char* name);
+	Color GetColor(const char* name) const;
 	void SetColor(const char* name, Color value);
 
 
+
+	struct Tweakable
+	{
+		Tweakable(const char* name, int* valuePtr, int minValue, int maxValue);
+		Tweakable(const char* name, float* valuePtr, float minValue, float maxValue);
+		Tweakable(const char* name, Vector2* valuePtr, Vector2 minValue, Vector2 maxValue);
+		Tweakable(const char* name, Vector3* valuePtr, Vector3 minValue, Vector3 maxValue);
+		Tweakable(const char* name, Color* valuePtr, Color minValue, Color maxValue);
+
+		const char* name;
+		enum class Type { Int, Float, Vector2, Vector3, Color };
+		Type type;
+
+		union TweakablePtr
+		{
+			TweakablePtr() {}
+			int* i;
+			float* f;
+			Vector2* vec2;
+			Vector3* vec3;
+			Color* color;
+		};
+		TweakablePtr value;
+
+		union TweakableValue
+		{
+			TweakableValue() {}
+			int i;
+			float f;
+			Vector2 vec2;
+			Vector3 vec3;
+			Color color;
+		};
+		TweakableValue min;
+		TweakableValue max;
+	};	
+	const std::vector<Tweakable>& GetTweakables() { return m_tweakables; }
 
 
 	static Tweakables& GetInstance()
@@ -71,30 +92,20 @@ public:
 	public:
 		template <typename T>
 		AutoRegister(const char* name, T& variable, T minValue, T maxValue);
-		~AutoRegister();
+
 	private:
 		void* m_variablePtr;
 	};
 
 
 private:
-	template <typename T>
-	auto& GetTweakablesMap()
-	{
-		fprintf(stderr, "Tweakables does not support this type.");
-		assert(false);
-	}
-	template <> auto& GetTweakablesMap<int>() { return m_ints; }
-	template <> auto& GetTweakablesMap<float>() { return m_floats; }
-	template <> auto& GetTweakablesMap<Vector2>() { return m_vector2s; }
-	template <> auto& GetTweakablesMap<Vector3>() { return m_vector3s; }
-	template <> auto& GetTweakablesMap<Color>() { return m_colors; }
+	template <typename TweakableType>
+	Tweakable& InsertTweakable(const char* name, TweakableType* valuePtr, TweakableType minValue, TweakableType maxValue);
 
-	std::unordered_map<const char*, Tweakable<int>> m_ints;
-	std::unordered_map<const char*, Tweakable<float>> m_floats;
-	std::unordered_map<const char*, Tweakable<Vector2>> m_vector2s;
-	std::unordered_map<const char*, Tweakable<Vector3>> m_vector3s;
-	std::unordered_map<const char*, Tweakable<Color>> m_colors;
+	const Tweakable* GetTweakable(const char* name) const;
+	Tweakable* GetTweakable(const char* name);
+
+	std::vector<Tweakable> m_tweakables;
 };
 
 
@@ -106,3 +117,15 @@ Tweakables::AutoRegister::AutoRegister(const char* name, T& variable, T minValue
 		m_variablePtr = nullptr;
 }
 
+
+template <typename TweakableType>
+Tweakables::Tweakable& Tweakables::InsertTweakable(const char* name, TweakableType* valuePtr, TweakableType minValue, TweakableType maxValue)
+{
+	auto nameCompare = [] (const Tweakable& tweakable, const char* name) {
+		return strcmp(tweakable.name, name) < 0;
+	};
+	auto iter = lower_bound(begin(m_tweakables), end(m_tweakables), name, nameCompare);
+	assert((iter == end(m_tweakables)) || (strcmp(iter->name, name) > 0));
+	iter = m_tweakables.emplace(iter, name, valuePtr, minValue, maxValue);
+	return *iter;
+}

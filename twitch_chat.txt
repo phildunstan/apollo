@@ -1,0 +1,963 @@
+01/08/2015
+  KiwiIRC
+Server3#phildunstan
+22:25:57
+â†’ phildunstan has joined 
+22:54:48ghassanpl
+Woo, more C++ 
+23:00:48ghassanpl
+Is it weird that I write almost exactly the same way as you do? 
+23:01:53ghassanpl
+In almost every way, except the case of class field names O_o 
+23:02:13
+But I could very well mistake your code for mine 
+23:03:05
+I name private fields mLikeThis, and public members LikeThis 
+23:03:27
+So not far off 
+23:05:22ghassanpl
+I have my own "private" library of common functions/classes/algorithms though, targeted towards game making though :P 
+23:05:48skynnnet32
+how old are you? 
+23:07:05skynnnet32
+i am 18 
+23:07:10dipolaar
+so what's ur favorite c++111/14 feature for everydays programming? 
+23:07:40ghassanpl
+dipolaar, NSDMI ! 
+23:07:50
+Oh god NSDMI are the best things ever 
+23:08:10
+Also lambdas! And variadic templates! And auto! And decltype! And almost everything else! 
+23:08:23skynnnet32
+who do you work for? 
+23:08:35dipolaar
+variadic template here probably 
+23:09:45ghassanpl
+NSDMIs are the best thing ever, no more explicit constructors just for member initializer list ! 
+23:10:46skynnnet32
+what's the difference between C++ and C# ? 
+23:10:51dipolaar
+im not a fan of nsdmi 
+23:10:55diukas1
+@Skynnnet32 lewl 
+23:11:06
+you cant compare c++ and c# 
+23:11:08skynnnet32
+i am newb i k now 
+23:11:13diukas1
+it's too different languages 
+23:11:20ghassanpl
+dipolaar, why? 
+23:11:31skynnnet32
+why is one better than other? 
+23:11:45ghassanpl
+sKyNNNet32, it's not, they're different (apples and oranges) :P 
+23:11:52diukas1
+C# is like java 
+23:12:24dipolaar
+Ghassanpl cuz u have to look carefully in the class def. anyway maybe it's just me 
+23:13:13
+c++ with "modules" and a couple of minor things and it's the best language by far 
+23:14:20ghassanpl
+I'd argue there is no "best" language :) 
+23:14:23
+It all depends on what you need 
+23:14:43dipolaar
+right 
+23:16:56diukas1
+press continue in visualstudio 
+23:17:56diukas1
+im good just chillin in bed with lapop Keepo 
+23:18:20
+been working outside allday almost broke my leg it got stuck between heavy metals 
+23:20:09diukas1
+been practising SSE2 SIMD instructions its going  quite well 
+23:22:15ghassanpl
+As far as I know it usually does pretty well with converting to SSE 
+23:22:28
+But you have to specify that you want SSE2+ math in the project options 
+23:24:48diukas1
+well i was checking out some handmade game videos about simd and he was compilng stuff with gcc but it didnt optimise too well explicit write out of operations made rendering routine from 250 
+23:24:57
+250+cycles to 50~ 
+23:26:12diukas1
+yes that guy but he using emacs for code and vs for debugging 
+23:29:31bobthescv
+GCC is surprisingly bad at optimizing data copying (like memcpy) even with -march=native (at least on sandy bridge). 
+23:29:50diukas1
+myself i use visual studio when i steam but offline i use vim SSSsss 
+23:31:33diukas1
+u can install vsvim to enable all keybinds and modes in visual studio 
+23:31:55dipolaar
+swap with the last element> 
+23:31:56
+? 
+23:35:00diukas1
+the more i look at you u resemble my bachelor study SE lecturer SSSsss 
+23:35:50
+in lithuania Keepo 
+23:36:07dipolaar
+kinda makes me want to start coding again 
+23:37:00bobthescv
+Ah, here it is. I was digging into why the heck compilers take significantly longer time passing by value if the argument is bigger than 128 bytes, but part of that, I also found that GCC is about an order of magnitude slower at copying data than CLang: http://imgur.com/b1XIw5L 
+23:38:17ghassanpl
+As far as I know in the most common calling convention the first 2 arguments in registers, and the rest on the stack, so maybe that's it? :P 
+23:38:48
+are passed in registers* 
+23:39:38bobthescv
+Nope, it turns out after 128 bytes, it starts populating the stack with a  "rep movsq" call rather than doing an unrolled memory-register-memory copy. CLang seems to be able to vectorize it, but GCC doesn't. 
+23:39:58
+Was really confused there 
+23:39:59ghassanpl
+Oh, bytes, I read bits 
+23:40:13bobthescv
+Audio is alright 
+23:40:15ghassanpl
+Audio is fine 
+23:40:40
+Honestly, your accent is more of a problem than the audio, no offense :P 
+23:40:53diukas1
+you should ask for gameobject refrence not a copy SSSsss 
+23:40:57bobthescv
+I don't have any problem with the accent o_O 
+23:41:00diukas1
+this audio is fine for me 
+23:41:39dipolaar
+and not const probably 
+23:43:55diukas1
+i understand you perfectly SSSsss 
+23:45:24diukas1
+oh i see you upgraded to win10 aswell? 
+23:45:39tili_us
+wait how do you rename/refactor those methods? 
+23:45:43
+is that some hotkey? 
+23:45:58bobthescv
+Keep two vectors of collision objects, and copy the living ones asynchronously during rendering maybe, then do std::swap and clear the old one? 
+23:46:56tili_us
+2015 ? ah ok 
+23:47:26diukas1
+i had 1 softlock like 2 days ago on win10 the explorer locked itself on load loop and didnt restart if i kill it and rerun it again : [ 
+23:50:19diukas1
+got like 30mins of battery life left BibleThump 
+23:51:15ghassanpl
+I always give objects like bullets max life 
+23:51:40
+It ensures that they ALWAYS die 
+23:52:04
+Otherwise when I add things like gravity wells and the bullets spiral, there might be problems :P 
+23:53:02
+Are you 100% 1000% percent sure of that? I never trust myself when I think "I'm never gonna do X" 
+23:53:04
+:P 
+23:55:09diukas1
+okey bye gonna go sleep 
+00:04:26bobthescv
+Not stable_sort ? 
+00:04:41
+Although I guess therea re no duplicatse 
+00:04:45
+so it doesn't matter 
+00:05:54bobthescv
+binary search just returns a boolean I think 
+00:06:56mrkillius24
+hi 
+00:08:56bobthescv
+I think that gun is mildly overpowered 
+00:09:03
+;-) 
+00:09:29dipolaar
+stupid question but how do you work with git (github) on windows? command line too? 
+00:09:56
+or one uses the github app? 
+00:10:30
+alright. thx 
+00:11:17ghassanpl
+@Phildunstan, can you explain to me why everybody in game dev uses either perforce or git for code, and no one has even head of mercurial, which is as good if not better than git and leagues ahead of perforce 
+00:11:20
+heard* 
+00:11:40dipolaar
+reason: github 
+00:11:49bobthescv
+Do people use mercurial outside of the linux kernel guys? 
+00:12:04dipolaar
+linux kernel is git 
+00:12:08bobthescv
+It is? 
+00:12:11
+Hm 
+00:12:14ghassanpl
+dipolaar, mercurial has bitbucket 
+00:12:44dipolaar
+yes but the hype is on github 
+00:12:53bobthescv
+I use git but not github 
+00:13:00dipolaar
+its like facebook vs google+ lol 
+00:13:00bobthescv
+Mainly because I know how to use it 
+00:13:07ghassanpl
+Ugh 
+00:13:33
+Almost everyone I talk to agrees that mercurial is better than perforce and as good if not better than git, and yet nobody uses it :\ 
+00:13:46
+@Phildunstan, text rendering? that's always a doozy ;) 
+00:15:06ghassanpl
+@Phildunstan, can you tell us what you guys use at Ubi? 
+00:15:52dipolaar
+i guess people are switching to git 
+00:17:04ghassanpl
+Stupid perforce 
+00:17:15
+Perforce sucks donkey balls when it comes to code 
+00:18:58bobthescv
+Throttle the fire rate of the gun a bit maybe? 
+00:19:03dipolaar
+make a Credits section with all our names 
+00:19:08
+lmao 
+00:19:14bobthescv
+Like old school asteroids mode with a finite amout of bullets on screen? 
+00:23:48wsgwshlbgg
+Hi 
+00:26:12dipolaar
+decltype 
+00:26:53bobthescv
+Yea 
+00:30:08ghassanpl
+@Phildunstan, this might be a personal question, but have you ever struggled with programmer burnout? If so, how did you handle it? 
+00:30:32dipolaar
+commited murder 
+00:30:35
+:D 
+00:35:18ghassanpl
+I'm gonna have a job with Perforce, which I hate with a fiery passion, and working on other people's code, which I loathe... I don't think I've chosen wisely 
+00:37:22bobthescv
+I do game programming in my spare time because what I do at work is so uninteresting it's slowly killing my passion for programming :-/ 
+00:37:58dipolaar
+shouldnt the caller of FireBullet set the time? 
+00:38:17
+check then set 
+00:38:23talyzeni
+Rocket League 
+00:39:42dipolaar
+brilliant 
+00:41:18dipolaar
+very nice 
+00:43:38dipolaar
+good night/ thx, see ya 
+00:43:46monsieurempereur
+good night! 
+00:44:06bobthescv
+o/ 
+00:44:10talyzeni
+I'll see you tomorrow :) 
+00:44:33oscarmolinadev
+good night! thx 
+
+
+
+
+02/08/2015
+22:34:18
+? phildunstan has joined 
+22:34:58ghassanpl
+C++ code, relaxing, yess... 
+22:38:35oscarmolinadev
+Hello :) 
+22:40:47virdari
+hey phil, have you ever done anything using machine learning algs ? 
+22:46:22virdari
+just graduated, from uni of liverpool, did my dissertation on negamax, and improvement techniques over it on a board game. I'm interested in the market, you know how things are for an AI programmer, I'm at the beginning of the road and need to decide what to pursue, would appreciate any advice since you have plenty of experience in this field :). Just started looking up deep learning, I wanna play around with it a little more to be able to differentiate people based on their profile picture :) 
+23:01:55talyzeni
+Hello, I am good. How are you? 
+23:02:10ghassanpl
+I'm having a pretty crappy last few days so I'm trying to stay quiet 
+23:02:20razi3ll
+not good ... tomorrow is monday 
+23:02:29ghassanpl
+I've been known to be abrasive when stressed 
+23:03:18
+Pretty much the new job 
+23:03:32
+And I'm broke at the moment so I can't eat over the stress 
+23:04:56ghassanpl
+I hope so 
+23:04:59
+Thanks 
+23:05:55
+BTW wouldn't it be better to use std::any_of instead of accumulate to check for alive aliens? 
+23:18:05dipolaar
+delta time is too short? 
+23:24:00ghassanpl
+Argh god damn the vector<bool> ! 
+23:24:13
+Grargh I'm really not in the mood for bad stuff right now :( 
+23:25:05
+I need to have a vector of bools because I need to take pointers to the bools 
+23:28:13dipolaar
+u do the entity/component style? 
+23:28:52craftplorer
+Is this VS2013? 
+23:30:47dipolaar
+linear data friendly design is the future 
+23:31:10talyzeni
+I have basic knowledge of C++. But I struggle to create a basic game. do you have any tips or know any useful tutorials that would help? 
+23:31:42dipolaar
+Talyzeni : use sfml 
+23:31:59phildunstan
+or libcinder 
+23:34:33dipolaar
+for entity sys u have to build a very flexible and robust array container with easy lookup and insert/remove specs 
+23:38:46dipolaar
+start with the "entity" class :D 
+23:39:08devtron3d
+did you not say small game ? 
+23:40:04dipolaar
+dont be afraid of template 
+23:40:20devtron3d
+did not have the windows at full screen saw the solutions explore, and thought that was all the game source code files :\ 
+23:42:04dipolaar
+yeah i saw lots of his talk. brilliant guy 
+23:47:28dipolaar
+it wont work 
+23:47:48
+yes u have to make it known at compile time 
+23:48:48craftplorer
+Which talk are you talking about? 
+23:49:14ghassanpl
+I was away for a while, what's new? 
+23:49:15phildunstan
+https://www.youtube.com/watch?v=bIhUE5uUFOA 
+23:49:41craftplorer
+thank you 
+23:57:15dipolaar
+dont forget to inherit from aimodelbase 
+23:58:34dipolaar
+m_game... 
+23:58:40
+ok 
+00:00:47dipolaar
+use the old style object init 
+00:02:57dipolaar
+did u try GameObject player(blah); 
+00:03:04
+the good old style 
+00:05:45dipolaar
+i am wondering, since its only a templated ctor, the template arg must be implicit 
+00:05:59
+ie, it wont work as expected 
+00:10:11dipolaar
+lest use a union in gameobject class 
+00:10:36
+you wont have that many aimodel 
+00:15:47talyzeni
+Haha amazing when you having fun you forgot what time it is... didn't you say, you wasn't going longer than 12 lol 
+00:15:58
+forget* 
+00:28:29dipolaar
+nice one 
+00:33:51talyzeni
+night dude 
+00:34:03ghassanpl
+Goodnight :) 
+00:34:30dipolaar
+night. see ya 
+00:34:31craftplorer
+bye 
+
+03/08/2015
+22:35:55
+? phildunstan has joined 
+22:37:05ghassanpl
+I now have a first world problem that more than one of my favorite twitch streamers is streaming at the same time :( 
+22:37:17
+It was fine the first time 
+22:37:20
+Oh, now it's okay 
+22:38:33villimin
+hy 
+22:42:08ghassanpl
+Oh, as a gamedev streamer? You're the best AFAIK :P whilke is also good, and stoneharth actually work on a commercial games and stream as a studio 
+22:42:25
+I was watching theycallhimben before you showed up, he paints Warhammer figurines :P I like small, relaxing streamers 
+22:42:44
+stonehearth* 
+22:44:10ghassanpl
+I don't like watching Unity, I'm mad at Unity for takin our jurbs 
+22:47:42ghassanpl
+I much prefer programming ones, but you're pretty much the only person who writes high quality C++ code :P 
+22:48:34
+It's better than 90% of what's out there :P 
+22:51:58talyzeni
+Hello :) 
+22:52:13ghassanpl
+I'm writing my own code right now too, I like working "in parallel" with someone, and this is a good facsimile of that :P 
+23:01:37zabitamemuru
+hey dude u look cool when coding 
+23:02:12
+from Turkey 
+23:03:01satheinin
+Hello what is the name of the game that you are making 
+23:03:42
+sath is good 
+23:04:22zabitamemuru
+u work for ubi, omg cool! 
+23:05:40zabitamemuru
+omg The division ai programmer :d, i am also study computer engineering, who want to be a game programmer 
+23:06:09satheinin
+im learning c# and found the game dev in twitch looks interesting 
+23:08:51satheinin
+im new in to this what is better for game dev c# of c++ 
+23:10:25zabitamemuru
+u use snowdrop engine at work right? 
+23:10:39talyzeni
+gamebryo another game engine. I have used that before in uni 
+23:15:50satheinin
+im not rly trying to become a game dev but i do find it interesting 
+23:28:56wsgwshlbgg
+Hey 
+23:30:44pherousa
+I have no clue what's going on but it looks amazing Kappa 
+23:31:43talyzeni
+I know this is very personal. But income within the gaming industry is it any good? I've been told loads that you have to be really high up i.e. manager level before it gets worthwhile 
+23:32:28julije34
+hi 
+23:33:36talyzeni
+I guess it's the passion that makes it worthwhile :) 
+23:33:46
+I bet you have a smile on your face when you go to work. 
+23:34:16julije34
+what is better c# or c++ 
+23:34:55talyzeni
+He cannot really answer that question. depends on what you want to use the language for 
+23:36:25satheinin
+Im trying to become a software dev is the pay 
+23:36:33
+good 
+23:36:58talyzeni
+I gotta admit your website is like the best one I've seen :) love the design lol :) 
+23:37:10satheinin
+bulgaria 
+23:38:49pherousa
+What is easier to learn? C++ or C# 
+23:38:54satheinin
+i hear that there is a huge demand here for good devs is that a nessesary better pay 
+23:38:57
+c# 
+23:39:35talyzeni
+You're AI programmer... What was the most difficult algorithm  you had to implement  into a game? and Why? 
+23:39:39satheinin
+my opinion 
+23:39:43nonsensation
+wow, your HP is awesome, no doubts 
+23:42:05pherousa
+ok thanks, gonna learn C# 
+23:42:47talyzeni
+I had to do A* path searching before in uni. I thought that was so confusing lol 
+23:45:55talyzeni
+You going anywhere nice in the 2 weeks. or just having a break from streaming :) 
+23:47:16talyzeni
+Very nice. So the gaming business does pay well ;) 
+23:47:38nonsensation
+FuzzyOtterOO 
+23:47:40haapmusic
+Phil swimming  sea plus plus 
+23:48:00
+in... 
+23:48:27
+my little joke got lost. i 
+23:48:48
+i will try another terrible pun another day 
+23:49:09craftplorer
+:D 
+23:49:36talyzeni
+You have 2 weeks to think of one lol 
+23:59:31talyzeni
+When you are back. Will you carry on with this game? 
+00:00:53wsgwshlbgg
+I go off bye :) 
+00:01:19haapmusic
+bai bai :-) 
+00:01:21talyzeni
+Well have a nice time. Seeya in 2 weeks :) 
+00:01:54azenris
+so i join only to hear your going away for 2 weeks+ 
+00:02:32ammut85
+enjoy your break 
+00:02:53wsgwshlbgg
+Okey :) HeyGuys 
+00:03:06
+Byeeeee 
+
+
+26/08/15
+  KiwiIRC
+Server3#phildunstan
+21:03:39
+? phildunstan has joined 
+21:03:57ghassanpl
+Hello hello 
+21:04:02
+I am coding a game right now also 
+21:04:54
+So much buffering... Stupid european twitch servers 
+21:06:32ghassanpl
+Nah, I think twitch just doesn't like europe 
+21:07:11
+Maybe set a higher interval? It's coding, it doesn't need a lot 
+21:07:22
+iframe* interval 
+21:10:40sp0nji
+Yeah, not sure why but I also have lots of buffering on this channel 
+21:10:54
+feels like it's twitch's fault though 
+21:16:25metal_pole1234
+hello 
+21:19:20portalprogramming
+Are you using obs? 
+21:21:50portalprogramming
+How are you streaming? Using OBS, xSplit? 
+21:22:35
+Can you set your audio to mono? The right hear is a bit higher than the left one 
+21:24:01portalprogramming
+That's better! :) 
+21:24:10ghassanpl
+Much better 
+21:24:16portalprogramming
+Also, lower you bitrate or something. It keeps buffering. Twitch doesn't like streamer with low viewers. 
+21:24:23
+I have 1080p but 10 fps 
+21:24:39
+2000 bitrate 
+21:24:52ghassanpl
+Audio, it's buffering a lot less now, it's perfectly watchable for me 
+21:25:00portalprogramming
+The stream is buffering quite bit 
+21:25:02ghassanpl
+... and just right as I said that it buffered :P 
+21:25:04portalprogramming
+video 
+21:25:09
+GhassanPL :P 
+21:25:10buhb11
+I can't believe people actually code game logic inside C++ 
+21:25:26ghassanpl
+buhb11, it's a small game 
+21:25:33buhb11
+does not matter. 
+21:25:40ghassanpl
+How so? 
+21:25:49portalprogramming
+(pixel width * pixel height * frames-per-second * desired fidelity) / 1,000 
+21:25:54buhb11
+I find it painful! 
+21:25:55portalprogramming
+fidelity is 0.1 
+21:26:04
+2000 should be good for 1080p and 10 fps 
+21:27:33buhb11
+I'm doing myself a game framework inside c++ and opengl but all the logic of game will be inside lua. 
+21:27:55
+Phildunstan unity sucks *** :) 
+21:28:01
+if you're a game programmer not developer 
+21:28:19portalprogramming
+Lower lever is more fun! 
+21:28:23
+But thougher 
+21:28:54buhb11
+If I could make illegal unity I would.(okay I'll shut up) 
+21:28:59portalprogramming
+I had a bug for my rendering engine (FBO). Tried to find the bug for like 2 months, never found it :( 
+21:29:53ghassanpl
+I hated on unity until I started working with code for a AAA game written entirely in C++ 
+21:29:55buhb11
+It gives all this 'power' to everyone without needing to learn that much about _how_ a game actually works from bottom to top. 
+21:29:59ghassanpl
+By the japanese 
+21:30:18
+And I think I'd prefer a game written in Unity, at least it's a lot less code to *** up :\ 
+21:31:16buhb11
+write a game engine inside C++ and add C# or lua as scripting lang. 
+21:31:31portalprogramming
+Du kommer ju från Sverige :) 
+21:31:32buhb11
+Ghassanpl :) 
+21:31:34portalprogramming
+Tjenare :P 
+21:31:54ghassanpl
+I need to go, to sleepy 
+21:32:00
+too* 
+21:32:37
+Cool, I'll see you in the future, bye 
+21:33:10portalprogramming
+Noo stream freezed, did you see my message? 
+21:33:58
+Oh, nice! :) 
+21:34:19
+Hope you're having a good time here! :) 
+21:34:24
+From Gothenburg 
+21:39:53portalprogramming
+Gonna go to bed! Good luck and see ya! :) 
+21:53:04svenhof
+What do you do for a living? 
+
+26/08/2015
+22:19:29
+? phildunstan has joined 
+22:31:37ghassanpl
+Hello 
+22:32:04
+No sound? 
+22:32:08
+Oh 
+22:32:15
+Now there's sound 
+22:32:32
+Tired after a week of porting crappy japanese code :P 
+22:33:38ghassanpl
+Not allowed, it's a fighting game based on a pre-existing US property 
+22:37:25ghassanpl
+Which part of your code would you say is the most interesting or you are most proud of? 
+22:37:37
+I want to read it :) 
+22:41:36ghassanpl
+Hey, compared to the code I'm dealing with at my job, your code is like the ceiling of the Sistine Chapel :P 
+22:46:52ghassanpl
+Is everything okay, there's a lot of thumping in the background 
+22:50:38haapmusic
+c++ mindful meditation moments, with Phil. 
+22:52:13ghassanpl
+Have you thought of maybe adding a debug/tweak GUI, like AntTweakBar or imgui? Or is it too complex for a simple project like this? 
+22:54:50ghassanpl
+imgui is very unintrusive (imho) but it's kind of a pain to integrate (you need your own functions to render their draw lists) 
+22:55:22
+AntTweakBar is much simpler to hoop up,but it's a bit older and more intrusive 
+23:18:39ghassanpl
+Can you say whether you guys at your work use STL at all? 
+23:20:22ghassanpl
+Right, typical gamedev high-performance engine stuff 
+23:21:34ghassanpl
+Yeah, I used EASTL, it was pretty awesome 
+23:29:27ghassanpl
+Yay, credits 
+23:29:31
+Thanks for streaming 
+23:30:29cypryss
+which opengl library do youm use? 
+23:31:52cypryss
+thank you 
+23:31:54
+good night 
+
+29/08/2015
+  KiwiIRC
+Server3#phildunstan
+20:07:33
+? phildunstan has joined 
+20:28:21nonsensation
+Good evening :) How are you doing? 
+20:31:04zabitamemuru
+hey, there is no voice 
+20:31:26nonsensation
+I can hear him pretty well 
+20:31:44zabitamemuru
+i should refresh the page 
+20:32:07
+oo ok now D: 
+20:34:07nonsensation
+:) 
+20:37:44azenris
+TweakaableAutpoRegister defined where 
+20:45:39nonsensation
+what are those pink fields on the left and right side of the code editor? is it an addin or comes with the free version of visual studio? and what does it do? looks kind of a profiler result 
+20:45:58azenris
+source control i think 
+20:46:16
+o 
+21:01:17furygames_
+is there any free programs out there for game development sorry new to this 
+21:02:16zabitamemuru
+try unity3d 
+21:04:44phildunstan
+unity3d (c# or javascript), pygame (python), libcinder (c++), sfml (c++) 
+21:06:05zabitamemuru
+or try html5 canvas, javascript 
+
+31/08/2015
+22:02:37nonsensation
+Hey, how r u doing? 
+22:03:59nonsensation
+Sounds good :) im just chilling right now with yours stream and some nachos :D 
+22:08:26nonsensation
+what vcs do you use? tfs or git? 
+22:10:16nonsensation
+Yeah, i also prefer bitbucket for personal projects, although i use github for open source stuff, as its more popular 
+22:15:39hengad
+why do you use e.g. 10.0f instead of just 10? i am learning c++ and i know only basic stuff 
+22:17:27hengad
+oh that majes more sense but why not just use int :P 
+22:17:36
+makes* 
+22:28:49hengad
+wowowow what? that blew my mind, how can you type to 2 lines same time? 
+22:29:46
+dayym, that's nice 
+22:30:49finesem8
+What language is this? DansGame 
+22:30:51nonsensation
+Sublime text's multiple cursor is even more powerfull (supports autocompletion and like real cursors on every line) i kind of miss it in vidual studio 
+22:30:55
+c++ 
+22:31:01finesem8
+Aight 
+22:31:26
+Sublime is awesome! 
+22:31:37
+You should try it out if you havn't 
+22:32:05nonsensation
+but sulime lacks support for c++ plugins 
+22:32:42finesem8
+Yes there are downsides ofcoarse, but for html javascript php css it's the best I think :) 
+22:32:59nonsensation
+yeah, true 
+22:43:45finesem8
+Hey, what game are you building there by the way @phildunstan ? FunRun 
+22:44:34
+Ah okey, seems nice :) 
+22:47:45owen144576
+you're bloody clever 
+22:47:47
+m8 
+22:50:12owen144576
+what kind of game is it 
+22:51:18ghassanpl
+Oh, haven't noticed you're streaming 
+22:54:17ghassanpl
+Hey Phil, quick question 
+22:54:25
+What's your opinion on multiple results - tie() vs returning via argument references? 
+22:55:51owen144576
+omg this is scary 
+22:56:14ghassanpl
+Scary? How so? 
+22:56:49owen144576
+cuz i do not obtain the intellegence to understand what is going on here 
+22:56:59finesem8
+lol 
+22:57:00owen144576
+i 
+22:57:17ghassanpl
+It's just experience 
+22:57:27
+With enough knowledge and experience it becomes simple 
+22:57:30nonsensation
+i'd go without tie(), as i prefer ''A better C-style'' for my c++, but if the surrounding code is already heavyweight c++, id also go with tie 
+22:58:05ghassanpl
+@nonsensation, What do you mean by "heavyweight" C++? 
+22:58:56nonsensation
+i mean, when std::tie isnt the hardest part on understanding the code :D 
+22:59:53
+when you already work with tuples in other code or the function, why not using tie? but a tie alone is confusing i think 
+23:01:58owen144576
+what years or depending on if you're a fast learner 
+23:02:17
+to see it as "simple" 
+23:02:24ghassanpl
+I've been debugging all day, this is making my brain sore again :P 
+23:03:06nonsensation
+@Ghassanpl :P 
+23:03:19ghassanpl
+Owen144576, well, I've been writing code for the past 20 years, since I was 8-9, so there's that 
+23:03:31owen144576
+oh wow 
+23:04:20ghassanpl
+But you can learn to be a great coder in 5 years 
+23:04:34owen144576
+the only type of programming i've encountered is on turbo pascal :) 
+23:07:14nonsensation
+@Phildunstan is the tiny time elapsed from the profiler a plugin or comes with visual studio by default? 
+23:08:29nonsensation
+nice nice 
+23:12:28diukas1
+omeiged i see myself in credits Keepo 
+23:12:34nonsensation
+ohhh, wow :D 
+23:12:59wsgwshlbgg
+Hey :) 
+23:13:18nonsensation
+thanks to you :) have a good eve :) cya stream 
+23:13:28diukas1
+cya 
+23:13:59ghassanpl
+Buhbye 
+23:14:36
+Still streamin... 
+23:14:53phildunstan
+Just checking the source in. You can find it at github.com/phildunstan 
+
+02/09/2015
+21:03:38
+? phildunstan has joined 
+21:10:56phildunstan
+Sorry about that 
+21:11:03
+Coming back now. 
+21:11:10
+I screwed up the layout a bit 
+21:11:22ghassanpl
+Hello 
+21:14:06monsieurempereur
+Hello, how have you been? 
+21:17:43monsieurempereur
+I've been working for the last month or so, I couldn't watch streams as much. 
+21:17:47
+:( 
+21:19:34nonsensation
+Hey, how are you doing? :) 
+21:23:02monsieurempereur
+is it possible to create a real time business desktop app in c++? 
+21:24:13ghassanpl
+You can do anything in C++! It's like zombo.com that way 
+21:25:16dylamsamuel
+haha I see what you did there GhassanPL 
+21:29:06hengad
+Could you show your main function? 
+21:29:32cryptdos
+is it anything to do with line ((facing.y < 0 && (position.y > minWorld.y)) || were you meant to change the second > to a < ? 
+21:33:18hengad
+If you have so many files, how can your main be that simple :o 
+21:37:40hengad
+how did you learn game programming? by yourself or did you have education? 
+21:40:00nonsensation
+have you changed ur stream settings? or is it my lame ingternet? i cannot watch 10secs straight today. its probably my connection :\ 
+21:40:25hengad
+for me its okay 
+21:41:02
+it's your network nonsensation 
+21:41:34nonsensation
+no, dont change anything, its our shitty www :\ argh 
+21:42:03
+@Hengad unfortunately ^^, 
+21:43:27icemanvincy85
+Hi, i learn c and c++ at school, i started to develop in c#, but c++ is so complicated :) 
+21:44:34hengad
+@Phildunstan if i have learned pointers and templates, is there something even harder? 
+21:44:40
+For me c++ have been simple 
+21:45:07icemanvincy85
+i start with Unity and c#, video tutorial helps me a little :) but i'm just a rookie for now...i hope to improve when i grow up ;) 
+21:45:27nonsensation
+@Hengad do you know expression templates :D look at the boost hana source or similar, this is nuts 
+21:48:56icemanvincy85
+never seen the assert :) 
+21:51:28icemanvincy85
+you never use comments, you remember every function you make? Impressive 
+21:52:12zekangaroo
+I'm just starting with C# myself looking forward to C++ 
+21:53:15icemanvincy85
+with Unity and c# you could make great game, C++ is more professional 
+21:54:22jnix002
+hello! 
+21:54:23ghassanpl
+If you just want to make games, I'd recommend C# and Unity, if you're passionate about programming, try C++ 
+21:55:24icemanvincy85
+i just complete the Roll a ball tutorial of Unity, simply game...but i'm just playing to change color, and make other things...i made also the Space shooter...before the stealth game i wanna improve better 
+21:55:30ghassanpl
+Making games at the AAA level is difficult and often unrewarding work 
+21:57:28mickymaven
+i might learn something on this stream :) 
+21:57:44
+hope you get something from your game :) 
+21:58:01ghassanpl
+@Phildunstan, in situations like these I'd forgo an implicit range in favor of an explicit one 
+21:59:03nonsensation
+Hey @ Mickymaven 
+21:59:20mickymaven
+RaccAttack / 
+21:59:56toshimi92
+Having fun right !!!!????? 
+22:00:47icemanvincy85
+i hate when i can't fix the errors ahah 
+22:04:11ghassanpl
+Ugh I hate dealing with floats for this very reason 
+22:05:11ragathian
+Ghassanpl, if you need to do an equals comparison with floats you're usually doing something wrong(or writing unit tests as in this case) 
+22:05:31ghassanpl
+Ragathian, I know 
+22:05:45nonsensation
+@Ragathian also on == 0.0? 
+22:06:30ukropas
+what kind of graphics API is he using? 
+22:06:41ragathian
+Nonsensation, that depends, if its to avoid a division by 0, its probably a valid use of it 
+22:06:45ghassanpl
+OpenGL on top of SDL 
+22:06:45nonsensation
+Opengl + SDL+ Glew 
+22:10:06ukropas
+Have a nice and productive day : ) 
+22:10:12icemanvincy85
+who is outside and trying to enter should hit the wall and destroy, no? 
+22:10:15ghassanpl
+Well if the player cannot kill the monsters outside the world and they move randomly, there's no guarantee the player will ever win :P 
+22:11:36norka98
+Im trying to get into progaming, i would like to get into java, i have some basic knoweledge, what would u suggest i do to start with java ? 
+22:12:11ragathian
+Norka98, download an IDE and go through a few tutorials 
+22:12:39icemanvincy85
+Java is more complicated than c# for me, easier than c++. C# to start i guess, than java and C++ 
+22:12:44norka98
+i have been searching but most tutorials are 2011 ish ( free or pirated ) , doest that even matter ' 
+22:13:55norka98
+Thx alot :) 
+22:14:28phildunstan
+http://exercism.io/getting-started 
+22:14:57ragathian
+Icemanvincy85, i wouldnt say java is more complicated than C#, but the .net toolchain is definitely a lot better 
+22:15:24norka98
+Thx alot @Phildunstan 
+22:18:23phildunstan
+https://www.dropbox.com/sh/7bqzqix2hnnsuis/AAAV5R7WCuU0jLi4lGpwHP8va?dl=0 
+22:18:52ghassanpl
+Access to this link has been disabled. Please ask the owner of the shared link to send a new link to access the file or the folder. 
+22:19:09beefyguad
+HEY 
+22:19:14
+CAN YOU HELP ME 
+22:19:29
+HOW DO I MAKE MAGICAVOXEL GRID SIZE BIGGER 
+22:19:45ghassanpl
+@Beefyguad, please don't shout 
+22:21:35phildunstan
+https://www.dropbox.com/s/w22k36bihvyoxgi/apollo.zip?dl=0 
+22:22:06ghassanpl
+works 
+22:22:45phildunstan
+github.com/phildunstan 
+22:23:09icemanvincy85
+there iis a free version of visual studio? :) 
+22:23:21ghassanpl
+Error opening file sprite_vs.glslError opening file sprite_fs.glslError linking OpenGL shaders: Unknown error 
+22:23:31
+There are no shader files in the zip 
+22:25:57ghassanpl
+No joystick, can't play 
+22:26:10
+Is the wall hugger supposed to die when it hits you? 
+22:27:05
+Do you accept pull requests? :P 
+22:28:03icemanvincy85
+i was a pleasure to see a little c++ for now i am focus in c# but i could try one day :) 
+22:28:09
+it was* 
+22:30:17icemanvincy85
+i'm italian by the way, my english is not fluent..i wrong to write lol 
+22:31:10ghassanpl
+Bye 
+22:31:20icemanvincy85
+i follow you...good night ;) 

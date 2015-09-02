@@ -26,6 +26,7 @@
 #include "Sprite.h"
 #include "debug_draw.h"
 #include "physics.h"
+#include "player.h"
 #include "rendering.h"
 #include "tweakables.h"
 #include "world.h"
@@ -34,18 +35,7 @@ using namespace std;
 using namespace std::chrono;
 
 
-
-float playerMovementSpeed = 120.0f;
-float playerRotationSpeed = 0.2f;
-float playerFireRate = 4.0f; // shots per second
-struct PlayerInput
-{
-	Vector2 movement { 0.0f, 0.0f };
-	Vector2 facing { 0.0f, 0.0f };
-	bool firing { false };
-};
 PlayerInput playerInput;
-
 
 void ReadPlayerInputFromJoystick(SDL_Joystick& joystick)
 {
@@ -68,49 +58,6 @@ void ReadPlayerInputFromJoystick(SDL_Joystick& joystick)
 	auto joystickRightTrigger = SDL_JoystickGetAxis(&joystick, 5) / 32768.0f;
 	playerInput.firing = (joystickRightTrigger > -0.5f);
 }
-
-
-void ApplyPlayerInput(const Time& time)
-{
-	auto& playerRB = GetRigidBody(player.objectId);
-	playerRB.velocity = playerInput.movement * playerMovementSpeed;
-
-	if (glm::length(playerInput.facing) > 0.5f)
-	{
-		auto playerHeading = atan2f(-playerRB.facing.x, playerRB.facing.y);
-		auto normalizedInput = glm::normalize(playerInput.facing);
-		auto desiredHeading = atan2f(-normalizedInput.x, normalizedInput.y);
-		auto delta = desiredHeading - playerHeading;
-		if (delta < -PI)
-		{
-			delta += TWO_PI;
-		}
-		else if (delta > PI)
-		{
-			delta -= TWO_PI;
-		}
-		delta = clamp(delta, -playerRotationSpeed, playerRotationSpeed);
-		auto newHeading = playerHeading + delta;
-
-		playerRB.facing = Vector2(-sin(newHeading), cos(newHeading));
-	}
-
-	//// stop the player movement if they are colliding with the edge of the screen
-	//const auto& collisionObject = GetCollisionObject(player.objectId);
-	//Vector2 futurePosition = playerRB.position + playerRB.velocity * time.deltaTime;
-	//if (BoundingBoxCollidesWithWorldEdge(futurePosition, playerRB.facing, collisionObject.aabbDimensions))
-	//{
-	//	playerRB.velocity = Vector2 { 0.0f, 0.0f };
-	//}
-
-	if (playerInput.firing && ((time.elapsedTime - player.timeOfLastShot) > 1.0f / playerFireRate))
-	{
-		FirePlayerBullet();
-		player.timeOfLastShot = time.elapsedTime;
-	}
-}
-
-
 
 int main(int /*argc*/, char** /*argv*/)
 {
@@ -220,7 +167,7 @@ int main(int /*argc*/, char** /*argv*/)
 		{
 			ReadPlayerInputFromJoystick(*joystick);
 		}
-		ApplyPlayerInput(time);
+		ApplyPlayerInput(time, playerInput);
 
 		UpdateWorld(time);
 

@@ -242,30 +242,51 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 
 void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight*/)
 {
-	const auto& intTweakables = Tweakables::GetInstance().GetIntVariables();
-	for (const auto& intTweakablePair : intTweakables)
+	const auto& tweakables = Tweakables::GetInstance().GetTweakables();
+	for (const auto& tweakable : tweakables)
 	{
-		const auto& intTweakable = intTweakablePair.second;
-		ImGui::SliderInt(intTweakable.name, intTweakable.variablePtr, intTweakable.minValue, intTweakable.maxValue);
-	}
+		const char* name = tweakable.name;
+		//while (const char* dot = strchr(name, '.'))
+		//{
+		//	std::string headerName(name, dot);
+		//	ImGui::CollapsingHeader(headerName.c_str());
+		//	name = dot + 1;
+		//}
 
-	const auto& floatTweakables = Tweakables::GetInstance().GetFloatVariables();
-	for (const auto& floatTweakablePair : floatTweakables)
-	{
-		const auto& floatTweakable = floatTweakablePair.second;
-		ImGui::SliderFloat(floatTweakable.name, floatTweakable.variablePtr, floatTweakable.minValue, floatTweakable.maxValue);
+		switch (tweakable.type)
+		{
+		case Tweakables::Tweakable::Type::Int:
+			ImGui::SliderInt(name, tweakable.value.i, tweakable.min.i, tweakable.max.i);
+			break;
+		case Tweakables::Tweakable::Type::Float:
+			ImGui::SliderFloat(name, tweakable.value.f, tweakable.min.f, tweakable.max.f);
+			break;
+		case Tweakables::Tweakable::Type::Vector2:
+		{
+			char modifiedName[64];
+			snprintf(modifiedName, 64, "%s_x", name);
+			ImGui::SliderFloat(modifiedName, &tweakable.value.vec2->x, tweakable.min.vec2.x, tweakable.max.vec2.x);
+			snprintf(modifiedName, 64, "%s_y", name);
+			ImGui::SliderFloat(modifiedName, &tweakable.value.vec2->y, tweakable.min.vec2.y, tweakable.max.vec2.y);
+			break;
+		}
+		case Tweakables::Tweakable::Type::Vector3:
+		{
+			char modifiedName[64];
+			snprintf(modifiedName, 64, "%s_x", name);
+			ImGui::SliderFloat(modifiedName, &tweakable.value.vec3->x, tweakable.min.vec3.x, tweakable.max.vec3.x);
+			snprintf(modifiedName, 64, "%s_y", name);
+			ImGui::SliderFloat(modifiedName, &tweakable.value.vec3->y, tweakable.min.vec3.y, tweakable.max.vec3.y);
+			snprintf(modifiedName, 64, "%s_z", name);
+			ImGui::SliderFloat(modifiedName, &tweakable.value.vec3->z, tweakable.min.vec3.z, tweakable.max.vec3.z);
+			break;
+		}
+		case Tweakables::Tweakable::Type::Color:
+			ImGui::ColorEdit4(name, reinterpret_cast<float*>(tweakable.value.color));
+			break;
+		default:
+			break;
+		}
 	}
-
-	const auto& vector2Tweakables = Tweakables::GetInstance().GetVector2Variables();
-	for (const auto& vector2TweakablePair : vector2Tweakables)
-	{
-		const auto& vector2Tweakable = vector2TweakablePair.second;
-		char name[64];
-		snprintf(name, 64, "%s_x", vector2Tweakable.name);
-		ImGui::SliderFloat(name, &vector2Tweakable.variablePtr->x, vector2Tweakable.minValue.x, vector2Tweakable.maxValue.x);
-		snprintf(name, 64, "%s_y", vector2Tweakable.name);
-		ImGui::SliderFloat(name, &vector2Tweakable.variablePtr->y, vector2Tweakable.minValue.y, vector2Tweakable.maxValue.y);
-	}
-
 }
 

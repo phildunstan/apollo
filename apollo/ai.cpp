@@ -227,12 +227,12 @@ AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
 {
 }
 
-TWEAKABLE(float, cohesionMagnitude, 1000.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, cohesionRadius, 50.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, alignmentMagnitude, 10.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, alignmentRadius, 50.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, separationMagnitude, 500.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, separationRadius, 30.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, cohesionMagnitude, "Alien.Offspring.CohesionMagnitude", 1000.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, cohesionRadius, "Alien.Offspring.CohesionRadius", 50.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, alignmentMagnitude, "Alien.Offspring.AlignmentMagnitude", 10.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, alignmentRadius, "Alien.Offspring.AlignmentRadius", 50.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, separationMagnitude, "Alien.Offspring.SeparationMagnitude", 500.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, separationRadius, "Alien.Offspring.SeparationRadius", 30.0f, 0.0f, 1000.0f);
 
 void AIModelAlienOffspring::Update(const Time& time)
 {
@@ -363,8 +363,8 @@ AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
 {
 }
 
-TWEAKABLE(float, wallHuggerSpeed, 300.0f, 0.0f, 1000.0f);
-TWEAKABLE(float, wallHuggerCrossingProbability, 0.01f, 0.0f, 0.01f);
+TWEAKABLE(float, wallHuggerSpeed, "Alien.WallHugger.Speed", 150.0f, 0.0f, 1000.0f);
+TWEAKABLE(float, wallHuggerCrossingProbability, "Alien.WallHugger.CrossingProbability", 0.002f, 0.0f, 0.01f);
 
 void AIModelAlienWallHugger::Update(const Time& /*time*/)
 {
