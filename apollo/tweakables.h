@@ -25,6 +25,9 @@ public:
 
 
 	// setters and getters for each type
+	bool GetBool(const char* name) const;
+	void SetBool(const char* name, bool value);
+
 	int GetInt(const char* name) const;
 	void SetInt(const char* name, int value);
 
@@ -44,6 +47,7 @@ public:
 
 	struct Tweakable
 	{
+		Tweakable(const char* name, bool* valuePtr, bool minValue, bool maxValue);
 		Tweakable(const char* name, int* valuePtr, int minValue, int maxValue);
 		Tweakable(const char* name, float* valuePtr, float minValue, float maxValue);
 		Tweakable(const char* name, Vector2* valuePtr, Vector2 minValue, Vector2 maxValue);
@@ -51,12 +55,13 @@ public:
 		Tweakable(const char* name, Color* valuePtr, Color minValue, Color maxValue);
 
 		const char* name;
-		enum class Type { Int, Float, Vector2, Vector3, Color };
+		enum class Type { Bool, Int, Float, Vector2, Vector3, Color };
 		Type type;
 
 		union TweakablePtr
 		{
 			TweakablePtr() {}
+			bool* b;
 			int* i;
 			float* f;
 			Vector2* vec2;
@@ -68,6 +73,7 @@ public:
 		union TweakableValue
 		{
 			TweakableValue() {}
+			bool b;
 			int i;
 			float f;
 			Vector2 vec2;

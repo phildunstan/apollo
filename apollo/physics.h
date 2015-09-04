@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "game.h"
@@ -47,7 +48,7 @@ struct CollisionObject
 {
 	CollisionObject(ObjectId _objectId, const Vector2& _aabbDimensions)
 		: objectId(_objectId)
-		, aabbDimensions(_aabbDimensions)
+		, boundingBoxDimensions(_aabbDimensions)
 	{
 	}
 
@@ -58,7 +59,7 @@ struct CollisionObject
 	CollisionObject& operator=(const CollisionObject&) = delete;
 
 	ObjectId objectId;
-	Vector2 aabbDimensions;
+	Vector2 boundingBoxDimensions;
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 1.0f };
 
@@ -82,7 +83,8 @@ void EnsurePlayerIsInsideWorldBounds();
 bool BoundingBoxCollidesWithWorldEdge(const Vector2& position, const Vector2& facing, const Vector2& dimensions);
 bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object);
 
-CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& aabbDimensions);
+CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& boundingBoxDimensions);
 CollisionObject& GetCollisionObject(ObjectId objectId);
-std::vector<ObjectId> UpdateCollision(const Time& time);
+void UpdateCollision(const Time& time, std::vector<std::pair<ObjectId, ObjectId>>& collidingPairs, std::vector<ObjectId>& collidingWithWorld);
+
 

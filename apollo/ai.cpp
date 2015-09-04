@@ -48,7 +48,7 @@ void UpdateRandomVelocity(GameObject& alien, RigidBody& rigidBody, const Time& /
 		Vector2 newDirection = GetRandomVectorOnCircle();
 		rigidBody.velocity = maxAlienSpeed * newDirection;
 		Vector2 futurePosition = rigidBody.position + rigidBody.velocity * lookAheadTime;
-		validMoveTarget = !BoundingBoxCollidesWithWorldEdge(futurePosition, newDirection, collisionObject.aabbDimensions);
+		validMoveTarget = !BoundingBoxCollidesWithWorldEdge(futurePosition, newDirection, collisionObject.boundingBoxDimensions);
 	} while (!validMoveTarget);
 }
 
@@ -371,6 +371,7 @@ void AIModelAlienWallHugger::Update(const Time& /*time*/)
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	Vector2 position = rigidBody.position;
 	Vector2 facing = rigidBody.facing;
+	const auto& collisionObject = GetCollisionObject(alien.objectId);
 
 	if (currentMovementMode == MovementMode::Stationary)
 	{
@@ -380,7 +381,7 @@ void AIModelAlienWallHugger::Update(const Time& /*time*/)
 	if (currentMovementMode != MovementMode::Crossing)
 	{
 		float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
-		tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f });
+		tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, collisionObject.boundingBoxDimensions);
 
 		if (currentMovementMode == MovementMode::SlideLeft)
 			rigidBody.velocity = wallHuggerSpeed * Vector2 { -facing.y, facing.x };
@@ -406,7 +407,7 @@ void AIModelAlienWallHugger::Update(const Time& /*time*/)
 			// when we hit the other side, reverse the facing so that GetPositionAlongWallCoordFromPositionAndFacing works
 			facing = -facing;
 			float wallCoord = GetPositionAlongWallCoordFromPositionAndFacing(position, facing);
-			tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, Vector2 { 32.0f, 32.0f });
+			tie(position, facing) = GetPositionAndFacingFromWallCoord(wallCoord, collisionObject.boundingBoxDimensions);
 
 			Vector2 wallFinishPosition = position;
 			CreateWall(wallStartPosition, wallFinishPosition);

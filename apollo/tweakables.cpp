@@ -24,6 +24,21 @@ namespace
 }
 
 
+bool Tweakables::GetBool(const char* name) const
+{
+	const auto* tweakable = GetTweakable(name);
+	assert(tweakable);
+	return *tweakable->value.b;
+}
+
+void Tweakables::SetBool(const char* name, bool value)
+{
+	auto* tweakable = GetTweakable(name);
+	assert(tweakable);
+	*tweakable->value.b = value;
+}
+
+
 int Tweakables::GetInt(const char* name) const
 {
 	const auto* tweakable = GetTweakable(name);
@@ -125,6 +140,15 @@ Tweakables::Tweakable* Tweakables::GetTweakable(const char* name)
 }
 
 
+
+Tweakables::Tweakable::Tweakable(const char* name, bool* valuePtr, bool minValue, bool maxValue)
+	: name(name)
+	, type(Type::Bool)
+{
+	value.b = valuePtr;
+	min.b = minValue;
+	max.b = maxValue;
+}
 
 Tweakables::Tweakable::Tweakable(const char* name, int* valuePtr, int minValue, int maxValue)
 	: name(name)

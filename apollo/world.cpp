@@ -29,8 +29,11 @@ ObjectId GetNextObjectId()
 void CreatePlayerGameObject()
 {
 	assert(player.objectId != 0);
-	AddRigidBody(player.objectId, Vector2 { 50.0f, 20.0f }, Vector2 { 1.0f, 0.0f });
-	auto& collisionObject = AddCollisionObject(player.objectId, Vector2 { 32.0f, 32.0f });
+	const auto& metaData = GetGameObjectMetaData(GameObjectType::Player);
+	Vector2 position { 50.0f, 20.0f };
+	Vector2 facing { 1.0f, 0.0f };
+	AddRigidBody(player.objectId, position, facing);
+	auto& collisionObject = AddCollisionObject(player.objectId, metaData.boundingBoxDimensions);
 	collisionObject.layer = CollisionLayer::Player;
 	collisionObject.layerMask = CollisionLayer::Alien;
 }
@@ -71,10 +74,11 @@ tuple<Vector2, Vector2> findRandomPlaceToSpawnAlien()
 	return make_tuple(position, facing);
 }
 
-void CreateAlienPhysics(ObjectId objectId, const Vector2& position, const Vector2& facing, const Vector2& collisionBoxDimensions)
+void CreateAlienPhysics(ObjectId objectId, GameObjectType type, const Vector2& position, const Vector2& facing)
 {
+	const auto& metaData = GetGameObjectMetaData(type);
 	AddRigidBody(objectId, position, facing);
-	auto& collisionObject = AddCollisionObject(objectId, collisionBoxDimensions);
+	auto& collisionObject = AddCollisionObject(objectId, metaData.boundingBoxDimensions);
 	collisionObject.layer = CollisionLayer::Alien;
 	collisionObject.layerMask = CollisionLayer::Player | CollisionLayer::PlayerBullet;
 }
@@ -88,7 +92,7 @@ GameObject& CreateAlien()
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
 	tie(position, facing) = findRandomPlaceToSpawnAlien();
-	CreateAlienPhysics(alien.objectId, position, facing, Vector2 { 32.0f, 32.0f });
+	CreateAlienPhysics(alien.objectId, AlienType, position, facing);
 
 	alien.aiModel = CreateAI(alien);
 
@@ -167,7 +171,8 @@ tuple<Vector2, Vector2> GetPositionAndFacingFromWallCoord(float p, const Vector2
 	}
 	p -= wallWidth;
 
-	assert(p <= wallHeight);
+	assert(p <= wallHeight + 1.0e-4f);
+	p = min(p, wallHeight); // clamp the remainder to wallHeight to remove any floating point errors
 	{
 		// position along left wall, p increasing downwards
 		Vector2 position = Vector2 { minWorld.x + collisionBoxDimensions.y / 2.0f,  maxWorld.y - p };
@@ -213,9 +218,10 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
-	Vector2 collisionBoxDimensions { 32.0f, 32.0f };
-	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoxDimensions);
-	CreateAlienPhysics(alien.objectId, position, facing, collisionBoxDimensions);
+	const auto& metaData = GetGameObjectMetaData(alien.type);
+	Vector2 collisionBoundingBoxDimensions = metaData.boundingBoxDimensions;
+	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoundingBoxDimensions);
+	CreateAlienPhysics(alien.objectId, alien.type, position, facing);
 
 	alien.aiModel = CreateAI(alien);
 
@@ -225,19 +231,19 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 void CreateRandomAlien()
 {
 	float random = GetRandomFloat01();
-	if (random < 0.5f)
+	if (random < 0.2f)
 	{
 		CreateAlien<GameObjectType::AlienShy>();
 	}
-	else if (random < 0.75f)
+	else if (random < 0.5f)
 	{
 		CreateAlien<GameObjectType::AlienChase>();
 	}
-	else if (random < 0.9f)
+	else if (random < 0.8f)
 	{
 		CreateAlien<GameObjectType::AlienRandom>();
 	}
-	else if (random < 0.95f)
+	else if (random < 0.9f)
 	{
 		CreateAlien<GameObjectType::AlienMothership>();
 	}
@@ -256,17 +262,23 @@ void InitWorld()
 	aliens.reserve(1000);
 
 	// create a bunch of aliens to shoot
-	const int numAliens = 12;
+	const int numAliens = 30;
 	for (int i = 0; i < numAliens; ++i)
 	{
 		CreateRandomAlien();
 	}
-	CreateAlien<GameObjectType::AlienWallHugger>();
+	//CreateAlien<GameObjectType::AlienWallHugger>();
 }
 
 
 void KillGameObject(GameObject& gameObject)
 {
+	// player is invincible
+	if (gameObject.type == GameObjectType::Player)
+		return;
+
+	if (!gameObject.isAlive)
+		return;
 	IncrementPlayerScore(gameObject);
 	gameObject.isAlive = false;
 	auto& collisionObject = GetCollisionObject(gameObject.objectId);
@@ -288,20 +300,29 @@ void UpdateAI(const Time& time)
 
 void UpdateWorld(const Time& time)
 {
+	static vector<pair<ObjectId, ObjectId>> collidingPairs;
+	static vector<ObjectId> collidingWithWorld;
+
 	UpdateRigidBodies(time);
 
 	EnsurePlayerIsInsideWorldBounds();
 
-	auto collidingObjects = UpdateCollision(time);
+	UpdateCollision(time, collidingPairs, collidingWithWorld);
 
-	// resolve objects that have collided
-	player.isAlive = !binary_search(begin(collidingObjects), end(collidingObjects), player.objectId);
-	for (auto& enemy : aliens)
-		if (binary_search(begin(collidingObjects), end(collidingObjects), enemy.objectId))
-			KillGameObject(enemy);
-	for (auto& bullet : bullets)
-		if (binary_search(begin(collidingObjects), end(collidingObjects), bullet.objectId))
-			KillGameObject(bullet);
+	// resolve objects that have collided against the world
+	for (const auto objectId : collidingWithWorld)
+	{
+		auto& gameObject = GetGameObject(objectId);
+		if ((gameObject.type != GameObjectType::Player) && (gameObject.type != GameObjectType::AlienWallHugger))
+			KillGameObject(gameObject);
+	}
+
+	// resolve game object - game object collision pairs
+	for (const auto collidingPair : collidingPairs)
+	{
+		KillGameObject(GetGameObject(collidingPair.first));
+		KillGameObject(GetGameObject(collidingPair.second));
+	}
 
 	// update the AI
 	UpdateAI(time);

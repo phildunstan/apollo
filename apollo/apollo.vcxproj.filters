@@ -13,6 +13,7 @@
     <ClCompile Include="world.cpp" />
     <ClCompile Include="player.cpp" />
     <ClCompile Include="tweakables.cpp" />
+    <ClCompile Include="game_object.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />

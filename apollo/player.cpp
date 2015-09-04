@@ -44,7 +44,7 @@ void ApplyPlayerInput(const Time& time, const PlayerInput& playerInput)
 	//// stop the player movement if they are colliding with the edge of the screen
 	//const auto& collisionObject = GetCollisionObject(player.objectId);
 	//Vector2 futurePosition = playerRB.position + playerRB.velocity * time.deltaTime;
-	//if (BoundingBoxCollidesWithWorldEdge(futurePosition, playerRB.facing, collisionObject.aabbDimensions))
+	//if (BoundingBoxCollidesWithWorldEdge(futurePosition, playerRB.facing, collisionObject.boundingBoxDimensions))
 	//{
 	//	playerRB.velocity = Vector2 { 0.0f, 0.0f };
 	//}

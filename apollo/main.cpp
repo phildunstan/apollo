@@ -120,6 +120,8 @@ int main(int /*argc*/, char** /*argv*/)
 	ImGui_ImplSdl_Init(window.get());
 	auto imguiSDLCleanup = make_scope_exit(ImGui_ImplSdl_Shutdown);
 
+	CreateGameObjectMetaData();
+
 	if (!LoadResources())
 	{
 		return 1;

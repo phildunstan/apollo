@@ -34,6 +34,9 @@
 
 using namespace std;
 
+TWEAKABLE(bool, renderBoundingBoxes, "Physics.RenderBoundingBoxes", false, false, true);
+TWEAKABLE(bool, renderDeadObjects, "Physics.RenderDeadObjects", false, false, true);
+
 unique_ptr<struct FONScontext, decltype(&glfonsDelete)> fontStash { 0, glfonsDelete };
 int fontNormal;
 
@@ -79,14 +82,10 @@ bool LoadResources()
 		return false;
 
 	renderModels.reserve(10);
-	CreateRenderModel(GameObjectType::Player, "apollo.png");
-	CreateRenderModel(GameObjectType::Bullet, "bullet.png");
-	CreateRenderModel(GameObjectType::AlienRandom, "enemy_random.png");
-	CreateRenderModel(GameObjectType::AlienChase, "enemy_chase.png");
-	CreateRenderModel(GameObjectType::AlienShy, "enemy_shy.png");
-	CreateRenderModel(GameObjectType::AlienMothership, "enemy_mothership.png");
-	CreateRenderModel(GameObjectType::AlienOffspring, "enemy_offspring.png");
-	CreateRenderModel(GameObjectType::AlienWallHugger, "enemy_wallhugger.png");
+	for (const auto& metaData : gameObjectMetaDatas)
+	{
+		CreateRenderModel(metaData.type, metaData.spriteFilename);
+	}
 
 	return CheckOpenGLErrors();
 }
@@ -147,15 +146,21 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 	}
 
 	// draw the collision world
-	//for_each(begin(collisionObjects), end(collisionObjects), [](const auto& collisionObject)
-	//{
-	//	auto& gameObject = GetGameObject(collisionObject.objectId);
-	//	auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
-	//	float w = collisionObject.aabbDimensions.x;
-	//	float h = collisionObject.aabbDimensions.y;
-	//	auto color = gameObject.isAlive ? Color::White : Color::Gray;
-	//	DebugDrawBox(transform, w, h, color);
-	//});
+	if (renderBoundingBoxes || renderDeadObjects)
+	{
+		for_each(begin(collisionObjects), end(collisionObjects), [] (const auto& collisionObject)
+		{
+			auto& gameObject = GetGameObject(collisionObject.objectId);
+			auto transform = CalculateObjectTransform(collisionObject.position, collisionObject.facing);
+			float w = collisionObject.boundingBoxDimensions.x;
+			float h = collisionObject.boundingBoxDimensions.y;
+			auto color = gameObject.isAlive ? Color::White : Color::Gray;
+			if ((renderBoundingBoxes && gameObject.isAlive) || (renderDeadObjects && !gameObject.isAlive))
+			{
+				DebugDrawBox(transform, w, h, color);
+			}
+		});
+	}
 
 	DebugDrawRender(projectionMatrix);
 
@@ -255,6 +260,9 @@ void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight
 
 		switch (tweakable.type)
 		{
+		case Tweakables::Tweakable::Type::Bool:
+			ImGui::Checkbox(name, tweakable.value.b);
+			break;
 		case Tweakables::Tweakable::Type::Int:
 			ImGui::SliderInt(name, tweakable.value.i, tweakable.min.i, tweakable.max.i);
 			break;

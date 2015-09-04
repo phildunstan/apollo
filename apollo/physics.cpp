@@ -11,11 +11,13 @@ using namespace std;
 vector<RigidBody> rigidBodies;
 vector<CollisionObject> collisionObjects;
 
+const int MAX_RIGID_BODIES = 1000;
+const int MAX_COLLISION_OBJECTS = 1000;
 
 void InitPhysics()
 {
-	rigidBodies.reserve(1000);
-	collisionObjects.reserve(1000);
+	rigidBodies.reserve(MAX_RIGID_BODIES);
+	collisionObjects.reserve(MAX_COLLISION_OBJECTS);
 }
 
 
@@ -54,7 +56,7 @@ vector<Vector2> GatherBoundingBoxVertices(const Vector2& position, const Vector2
 
 vector<Vector2> GatherObjectVertices(const CollisionObject& object)
 {
-	return GatherBoundingBoxVertices(object.position, object.facing, object.aabbDimensions);
+	return GatherBoundingBoxVertices(object.position, object.facing, object.boundingBoxDimensions);
 }
 
 
@@ -132,7 +134,7 @@ bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
 	vector<Vector2> objectVertices = GatherObjectVertices(object);
 	for (const auto& vertex : objectVertices)
 	{
-		if (!AABBContains(minWorld - Vector2 { 32.0f, 32.0f }, maxWorld + Vector2 { 32.0f, 32.0f }, vertex))
+		if (!AABBContains(minWorld, maxWorld, vertex))
 			return true;
 	}
 	return false;
@@ -142,13 +144,15 @@ bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
 
 RigidBody& AddRigidBody(ObjectId objectId, const Vector2& position, const Vector2& facing)
 {
+	assert(rigidBodies.size() < MAX_RIGID_BODIES);
 	rigidBodies.push_back(RigidBody { objectId, position, facing });
 	return rigidBodies.back();
 }
 
-CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& aabbDimensions)
+CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& boundingBoxDimensions)
 {
-	collisionObjects.push_back(CollisionObject { objectId, aabbDimensions });
+	assert(collisionObjects.size() < MAX_COLLISION_OBJECTS);
+	collisionObjects.push_back(CollisionObject { objectId, boundingBoxDimensions });
 	CollisionObject& collisionObject = collisionObjects.back();
 	const RigidBody& rigidBody = GetRigidBody(objectId);
 	collisionObject.position = rigidBody.position;
@@ -171,7 +175,7 @@ void EnsurePlayerIsInsideWorldBounds()
 {
 	auto& playerRB = GetRigidBody(player.objectId);
 	const auto& playerCollision = GetCollisionObject(player.objectId);
-	vector<Vector2> objectVertices = GatherBoundingBoxVertices(playerRB.position, playerRB.facing, playerCollision.aabbDimensions);
+	vector<Vector2> objectVertices = GatherBoundingBoxVertices(playerRB.position, playerRB.facing, playerCollision.boundingBoxDimensions);
 	Vector2 deltaRequired { 0.0f, 0.0f };
 	for (const auto& vertex : objectVertices)
 	{
@@ -199,7 +203,7 @@ void EnsurePlayerIsInsideWorldBounds()
 }
 
 // return all of the objects that have been in a collision
-vector<ObjectId> UpdateCollision(const Time& /*time*/)
+void UpdateCollision(const Time& /*time*/, vector<pair<ObjectId, ObjectId>>& collidingPairs, vector<ObjectId>& collidingWithWorld)
 {
 	// update collision objects from rigid bodies
 	for_each(begin(collisionObjects), end(collisionObjects), [] (CollisionObject& collisionObject)
@@ -210,18 +214,22 @@ vector<ObjectId> UpdateCollision(const Time& /*time*/)
 	});
 
 	// collision tests between every collision object
-	vector<ObjectId> collidingObjects;
-	collisionObjects.reserve(collisionObjects.size());
+	collidingWithWorld.clear();
+	collidingWithWorld.reserve(collisionObjects.size());
+	collidingPairs.clear();
+	collidingPairs.reserve(collisionObjects.size());
 
 	for (int i = 0; i < collisionObjects.size(); ++i)
 	{
 		auto& collisionObjectI = collisionObjects[i];
 		if (collisionObjectI.layer == CollisionLayer::PendingDestruction)
 			continue;
+
 		if (CollisionObjectCollidesWithWorldEdge(collisionObjectI))
 		{
-			collidingObjects.push_back(collisionObjectI.objectId);
+			collidingWithWorld.push_back(collisionObjectI.objectId);
 		}
+
 		for (int j = i + 1; j < collisionObjects.size(); ++j)
 		{
 			auto& collisionObjectJ = collisionObjects[j];
@@ -229,14 +237,11 @@ vector<ObjectId> UpdateCollision(const Time& /*time*/)
 				continue;
 			if (CollisionObjectsCollide(collisionObjectI, collisionObjectJ))
 			{
-				collidingObjects.push_back(collisionObjectI.objectId);
-				collidingObjects.push_back(collisionObjectJ.objectId);
+				collidingPairs.push_back(make_pair(collisionObjectI.objectId, collisionObjectJ.objectId));
 			}
 		}
 	}
 
-	sort(begin(collidingObjects), end(collidingObjects));
-	unique(begin(collidingObjects), end(collidingObjects));
-
-	return collidingObjects;
+	//sort(begin(collidingPairs), end(collidingPairs));
+	//unique(begin(collidingPairs), end(collidingPairs));
 }

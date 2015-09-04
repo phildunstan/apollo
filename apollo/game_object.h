@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "ai.h"
 
 ObjectId GetNextObjectId();
@@ -14,7 +15,8 @@ enum class GameObjectType : int
 	AlienShy,
 	AlienMothership,
 	AlienOffspring,
-	AlienWallHugger
+	AlienWallHugger,
+	Count
 };
 
 struct GameObject
@@ -38,3 +40,17 @@ struct GameObject
 private:
 	GameObject() {}
 };
+
+
+struct GameObjectMetaData
+{
+	GameObjectType type;
+	const char* spriteFilename;
+	float mass;
+	Vector2 boundingBoxDimensions;
+};
+
+extern std::vector<GameObjectMetaData> gameObjectMetaDatas;
+
+GameObjectMetaData& GetGameObjectMetaData(GameObjectType type);
+void CreateGameObjectMetaData();
