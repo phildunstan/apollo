@@ -44,7 +44,7 @@ GLProgram spriteShaderProgram;
 
 struct RenderModel
 {
-	RenderModel(const Sprite& sprite)
+	explicit RenderModel(const Sprite& sprite)
 		: sprite(sprite)
 	{
 	}

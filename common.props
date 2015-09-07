@@ -18,6 +18,7 @@
       <EnablePREfast>true</EnablePREfast>
       <UseFullPaths>true</UseFullPaths>
       <SDLCheck>true</SDLCheck>
+      <AdditionalOptions>/d2Zi+ /Zo /Zc:throwingNew %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <TargetMachine>NotSet</TargetMachine>

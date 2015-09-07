@@ -175,7 +175,6 @@ AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
 
 void AIModelAlienMothership::Update(const Time& /*time*/)
 {
-	const float timeBetweenLaunchesInWave = 0.02f;
 	const int numberOfLaunchesPerWave = 20;
 
 	if (currentMode == LaunchingMode::Waiting)

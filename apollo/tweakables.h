@@ -17,7 +17,7 @@ class Tweakables
 {
 public:
 	template <typename TweakableType>
-	bool Tweakables::Register(const char* name, TweakableType& variable, TweakableType minValue, TweakableType maxValue)
+	bool Register(const char* name, TweakableType& variable, TweakableType minValue, TweakableType maxValue)
 	{
 		InsertTweakable(name, &variable, minValue, maxValue);
 		return true;

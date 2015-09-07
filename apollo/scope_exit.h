@@ -74,16 +74,18 @@ public:
         other.m_owner = false;
     }
 
-    scope_exit(const Func& f) :
+    explicit scope_exit(const Func& f) :
         m_func(f),
         m_owner(true)
     {
     }
-    scope_exit(Func&& f) :
+
+	explicit scope_exit(Func&& f) :
         m_func(std::move(f)),
         m_owner(true)
     {
     }
+
     ~scope_exit()
     {
         if (m_owner)

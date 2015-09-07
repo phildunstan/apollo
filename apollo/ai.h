@@ -25,7 +25,7 @@ std::unique_ptr<AIModel> CreateAI(GameObject& gameObject);
 class AIModelAlienRandom : public AIModel
 {
 public:
-	AIModelAlienRandom(GameObject& alien);
+	explicit AIModelAlienRandom(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
@@ -38,7 +38,7 @@ private:
 class AIModelAlienShy : public AIModel
 {
 public:
-	AIModelAlienShy(GameObject& alien);
+	explicit AIModelAlienShy(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
@@ -50,7 +50,7 @@ private:
 class AIModelAlienChase : public AIModel
 {
 public:
-	AIModelAlienChase(GameObject& alien);
+	explicit AIModelAlienChase(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
@@ -61,7 +61,7 @@ private:
 class AIModelAlienMothership : public AIModel
 {
 public:
-	AIModelAlienMothership(GameObject& alien);
+	explicit AIModelAlienMothership(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
@@ -77,7 +77,7 @@ private:
 class AIModelAlienOffspring : public AIModel
 {
 public:
-	AIModelAlienOffspring(GameObject& alien);
+	explicit AIModelAlienOffspring(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
@@ -88,7 +88,7 @@ private:
 class AIModelAlienWallHugger : public AIModel
 {
 public:
-	AIModelAlienWallHugger(GameObject& alien);
+	explicit AIModelAlienWallHugger(GameObject& alien);
 	void Update(const Time& time) override;
 
 private:
