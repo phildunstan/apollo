@@ -40,7 +40,7 @@ GLShader CreateShader(GLenum shaderType, const char* source)
 
 GLShader LoadShader(GLenum shaderType, const string& filename)
 {
-	// read in the full file
+	// read in the full filename
 	ifstream in { filename.c_str() };
 	if (!in.good())
 	{

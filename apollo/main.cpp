@@ -19,6 +19,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "game.h"
+#include "profiler.h"
 #include "scope_exit.h"
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
@@ -61,6 +62,8 @@ void ReadPlayerInputFromJoystick(SDL_Joystick& joystick)
 
 int main(int /*argc*/, char** /*argv*/)
 {
+	ProfilerInit();
+
 	SeedRandom(2);
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
@@ -131,6 +134,7 @@ int main(int /*argc*/, char** /*argv*/)
 	auto debugDrawCleanup = make_scope_exit([] () { DebugDrawShutdown(); });
 
 	bool renderDebugUI = false;
+	bool renderProfilerUI = true;
 
 	InitPhysics();
 	InitWorld();
@@ -149,6 +153,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 		ImGui_ImplSdl_NewFrame(window.get());
 
+		ProfilerReset();
+
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
@@ -160,6 +166,8 @@ int main(int /*argc*/, char** /*argv*/)
 			case SDL_KEYDOWN:
 				if (event.key.keysym.sym == SDLK_BACKQUOTE)
 					renderDebugUI = !renderDebugUI;
+				if (event.key.keysym.sym == SDLK_F11)
+					renderProfilerUI = !renderProfilerUI;
 				break;
 			}
 			ImGui_ImplSdl_ProcessEvent(&event);
@@ -175,6 +183,11 @@ int main(int /*argc*/, char** /*argv*/)
 
 		RenderWorld(time, windowWidth, windowHeight);
 		RenderUI(time, windowWidth, windowHeight);
+
+		if (renderProfilerUI)
+		{
+			RenderProfiler(time, windowWidth, windowHeight);
+		}
 
 		if (renderDebugUI)
 		{

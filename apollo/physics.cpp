@@ -5,6 +5,7 @@
 #include "physics.h"
 #include "world.h"
 #include "math_helpers.h"
+#include "profiler.h"
 
 using namespace std;
 
@@ -62,6 +63,8 @@ vector<Vector2> GatherObjectVertices(const CollisionObject& object)
 
 bool CollisionObjectsCollide(const CollisionObject& objectA, const CollisionObject& objectB)
 {
+	PROFILER_TIMER();
+
 	// this check really isn't symmetric as we don't check A against B and B against A at the calling site
 	if (((objectA.layerMask & objectB.layer) == CollisionLayer::None) && ((objectB.layerMask & objectA.layer) == CollisionLayer::None))
 	{
@@ -131,6 +134,8 @@ bool BoundingBoxCollidesWithWorldEdge(const Vector2& position, const Vector2& fa
 
 bool CollisionObjectCollidesWithWorldEdge(const CollisionObject& object)
 {
+	PROFILER_TIMER();
+
 	vector<Vector2> objectVertices = GatherObjectVertices(object);
 	for (const auto& vertex : objectVertices)
 	{
@@ -162,6 +167,8 @@ CollisionObject& AddCollisionObject(ObjectId objectId, const Vector2& boundingBo
 
 void UpdateRigidBodies(const Time& time)
 {
+	PROFILER_TIMER();
+
 	// physics dynamic update
 	float deltaTime = time.deltaTime;
 	for_each(begin(rigidBodies), end(rigidBodies), [deltaTime] (RigidBody& rigidBody)
@@ -205,6 +212,8 @@ void EnsurePlayerIsInsideWorldBounds()
 // return all of the objects that have been in a collision
 void UpdateCollision(const Time& /*time*/, vector<pair<ObjectId, ObjectId>>& collidingPairs, vector<ObjectId>& collidingWithWorld)
 {
+	PROFILER_TIMER();
+
 	// update collision objects from rigid bodies
 	for_each(begin(collisionObjects), end(collisionObjects), [] (CollisionObject& collisionObject)
 	{

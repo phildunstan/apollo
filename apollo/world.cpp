@@ -7,6 +7,7 @@
 
 #include "physics.h"
 #include "player.h"
+#include "profiler.h"
 #include "math_helpers.h"
 #include "ai.h"
 
@@ -289,6 +290,8 @@ void KillGameObject(GameObject& gameObject)
 
 void UpdateAI(const Time& time)
 {
+	PROFILER_TIMER();
+
 	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
 		if (alien.isAlive)
 		{
@@ -300,6 +303,8 @@ void UpdateAI(const Time& time)
 
 void UpdateWorld(const Time& time)
 {
+	PROFILER_TIMER();
+
 	static vector<pair<ObjectId, ObjectId>> collidingPairs;
 	static vector<ObjectId> collidingWithWorld;
 

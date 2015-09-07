@@ -109,6 +109,7 @@
     <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="profiler.cpp" />
     <ClCompile Include="rendering.cpp" />
     <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="sprite.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="physics.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="profiler.h" />
     <ClInclude Include="rendering.h" />
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="sdl_helpers.h" />

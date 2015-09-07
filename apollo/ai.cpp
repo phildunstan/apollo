@@ -1,11 +1,14 @@
 #include <algorithm>
 #include <vector>
+#include <thread>
+#include <chrono>
 
 #include "ai.h"
 #include "debug_draw.h"
 #include "game.h"
 #include "game_object.h"
 #include "physics.h"
+#include "profiler.h"
 #include "tweakables.h"
 #include "world.h"
 
@@ -175,6 +178,8 @@ AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
 
 void AIModelAlienMothership::Update(const Time& /*time*/)
 {
+	PROFILER_TIMER();
+
 	const int numberOfLaunchesPerWave = 20;
 
 	if (currentMode == LaunchingMode::Waiting)

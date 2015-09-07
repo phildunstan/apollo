@@ -1,5 +1,5 @@
 /**
- * The contents of this file are based on the article posted at the
+ * The contents of this filename are based on the article posted at the
  * following location:
  *
  *   http://crascit.com/2015/06/03/on-leaving-scope-part-2/
@@ -19,7 +19,7 @@
  * With the above in mind, the content below is made available under
  * the same license terms as folly to minimize any legal concerns.
  * Should there be ambiguity over copyright ownership between Facebook
- * and myself for any material included in this file, it should be
+ * and myself for any material included in this filename, it should be
  * interpreted that Facebook is the copyright owner for the ambiguous
  * section of code concerned.
  *
@@ -31,7 +31,7 @@
  * Copyright 2015 Craig Scott
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ * you may not use this filename except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *    http://www.apache.org/licenses/LICENSE-2.0

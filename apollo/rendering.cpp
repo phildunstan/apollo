@@ -27,6 +27,7 @@
 #include "math_helpers.h"
 #include "physics.h"
 #include "player.h"
+#include "profiler.h"
 #include "sprite.h"
 #include "tweakables.h"
 #include "game_object.h"
@@ -75,7 +76,7 @@ const RenderModel& GetRenderModel(GameObjectType gameObjectType)
 bool LoadResources()
 {
 	fontStash = unique_ptr<struct FONScontext, decltype(&glfonsDelete)> { glfonsCreate(512, 512, FONS_ZERO_TOPLEFT), glfonsDelete };
-	fontNormal = fonsAddFont(fontStash.get(), "sans", "Bluehigh.ttf");
+	fontNormal = fonsAddFont(fontStash.get(), "sans", "Hack-Regular.ttf");
 
 	spriteShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
 	if (spriteShaderProgram == 0)
@@ -94,6 +95,8 @@ bool LoadResources()
 
 void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 {
+	PROFILER_TIMER();
+
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(0, 0, 0.2f, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -205,7 +208,7 @@ void RollCredits(const Time& time)
 	float dx = -100.0f, dy = height;
 	for (const auto& line : credits)
 	{
-		fonsDrawText(fontStash.get(), dx, dy, line.c_str(), NULL);
+		fonsDrawText(fontStash.get(), dx, dy, line.c_str(), nullptr);
 		dy += 20.0f;
 	}
 }
@@ -214,6 +217,8 @@ void RollCredits(const Time& time)
 
 void RenderUI(const Time& time, int windowWidth, int windowHeight)
 {
+	PROFILER_TIMER();
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
@@ -225,7 +230,7 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 	fonsSetFont(fontStash.get(), fontNormal);
 	fonsSetSize(fontStash.get(), 24.0f);
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
-	fonsDrawText(fontStash.get(), dx, dy, "Apollo", NULL);
+	fonsDrawText(fontStash.get(), dx, dy, "Apollo", nullptr);
 
 
 	dx = windowWidth / 2.0f - 160.0f;
@@ -234,7 +239,7 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 	fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
 	char scoreText[24];
 	snprintf(scoreText, 24, "Score: %04d", playerScore);
-	fonsDrawText(fontStash.get(), dx, dy, scoreText, NULL);
+	fonsDrawText(fontStash.get(), dx, dy, scoreText, nullptr);
 
 	if (IsGameOver())
 	{
@@ -247,6 +252,8 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 
 void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight*/)
 {
+	PROFILER_TIMER();
+
 	const auto& tweakables = Tweakables::GetInstance().GetTweakables();
 	for (const auto& tweakable : tweakables)
 	{
@@ -298,3 +305,28 @@ void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight
 	}
 }
 
+
+
+void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight)
+{
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, windowWidth, windowHeight, 0, -10.0f, 10.0f);
+
+	const auto& accumulatedStatistics = ProfilerGetAccumulatedStatistics();
+
+	float dx = 0;
+	float dy = 50.0f;
+	for (const auto& dataPoint : accumulatedStatistics)
+	{
+		fonsSetFont(fontStash.get(), fontNormal);
+		fonsSetSize(fontStash.get(), 24.0f);
+		fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
+		char text[255];
+		_snprintf_s(text, 255, "%-40s %9lldus %9lldus", dataPoint.id, dataPoint.duration.count() / 1000, dataPoint.duration.count() / (dataPoint.hitCount * 1000));
+		fonsDrawText(fontStash.get(), dx, dy, text, nullptr);
+		dy += 20.0f;
+	}
+}

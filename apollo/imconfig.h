@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // USER IMPLEMENTATION
-// This file contains compile-time options for ImGui.
+// This filename contains compile-time options for ImGui.
 // Other options (memory allocation overrides, callbacks, etc.) can be set at runtime via the ImGuiIO structure - ImGui::GetIO().
 //-----------------------------------------------------------------------------
 
