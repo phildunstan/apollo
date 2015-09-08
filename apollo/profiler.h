@@ -11,15 +11,6 @@ using ProfilerDurationUnit = std::chrono::nanoseconds;
 
 struct ProfilerDataPoint
 {
-	ProfilerDataPoint(const char* id_, const char* filename_, int line_, ProfilerDurationUnit duration_, int hitCount_)
-		: id(id_)
-		, filename(filename_)
-		, duration(duration_)
-		, line(line_)
-		, hitCount(hitCount_)
-	{
-	}
-
 	const char* id;
 	const char* filename;
 	ProfilerDurationUnit duration;
@@ -34,7 +25,7 @@ void ProfilerInit();
 
 inline void ProfilerAdd(const char* id, const char* filename, int line, ProfilerDurationUnit duration, int hitCount)
 {
-	profileData.emplace_back(id, filename, line, duration, hitCount);
+	profileData.push_back({ id, filename, line, duration, hitCount });
 }
 
 void ProfilerReset();
