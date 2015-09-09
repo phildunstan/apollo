@@ -38,12 +38,17 @@ struct hash<DataPointKey>
 };
 
 
-const vector<ProfilerDataPoint>& ProfilerGetAccumulatedStatistics()
+void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& accumulatedStatistics)
 {
-	static vector<ProfilerDataPoint> statistics;
+	accumulatedStatistics.emplace_back();
+	ProfilerFrameStatistics& currentFrameStatistics = accumulatedStatistics.back();
+	currentFrameStatistics.clear();
+
 	static unordered_map<DataPointKey, size_t> index;
-	statistics.clear();
 	index.clear();
+
+	// reserve the 0th statistics for the total frame time
+	currentFrameStatistics.emplace_back("total frame time");
 
 	for (const auto& dataPoint : profileData)
 	{
@@ -51,19 +56,32 @@ const vector<ProfilerDataPoint>& ProfilerGetAccumulatedStatistics()
 		auto indexEntryIter = index.find(key);
 		if (indexEntryIter == index.end())
 		{
-			index[key] = statistics.size();
-			statistics.push_back(dataPoint);
+			index[key] = currentFrameStatistics.size();
+			currentFrameStatistics.push_back(dataPoint);
+
 		}
 		else
 		{
-			auto& accumulatedStatistics = statistics[indexEntryIter->second];
-			assert(accumulatedStatistics.filename == dataPoint.filename);
-			assert(accumulatedStatistics.line == dataPoint.line);
-			assert(accumulatedStatistics.id == dataPoint.id);
-			accumulatedStatistics.duration += dataPoint.duration;
-			accumulatedStatistics.hitCount += dataPoint.hitCount;
+			auto& blockStastistics = currentFrameStatistics[indexEntryIter->second];
+			assert(blockStastistics.filename == dataPoint.filename);
+			assert(blockStastistics.line == dataPoint.line);
+			assert(blockStastistics.id == dataPoint.id);
+			blockStastistics.duration += dataPoint.duration;
+			blockStastistics.hitCount += dataPoint.hitCount;
+		}
+
+		if (strcmp(dataPoint.id, "main_loop") == 0)
+		{
+			currentFrameStatistics[0].duration = currentFrameStatistics[index[key]].duration;
+			currentFrameStatistics[0].hitCount = 1;
 		}
 	}
+}
 
+
+const std::vector<ProfilerFrameStatistics>& ProfilerGetAccumulatedStatistics()
+{
+	static vector<ProfilerFrameStatistics> statistics;
+	ProfilerAppendCurrentFrameStatistics(statistics);
 	return statistics;
 }

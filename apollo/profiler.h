@@ -3,7 +3,10 @@
 #include <chrono>
 #include <vector>
 
-#define PROFILER_TIMER() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__)
+#define PROFILER_TIMER_FUNCTION() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__)
+
+#define PROFILER_TIMER_BEGIN(ID) ProfilerTimer timer##ID(#ID, __FILE__, __LINE__)
+#define PROFILER_TIMER_END(ID) timer##ID.end()
 
 using ProfilerTimeUnit = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using ProfilerDurationUnit = std::chrono::nanoseconds;
@@ -11,6 +14,15 @@ using ProfilerDurationUnit = std::chrono::nanoseconds;
 
 struct ProfilerDataPoint
 {
+	ProfilerDataPoint(const char* id_)
+		: id(id_)
+		, filename("")
+		, duration()
+		, line(0)
+		, hitCount(0)
+	{
+	}
+
 	ProfilerDataPoint(const char* id_, const char* filename_, int line_, ProfilerDurationUnit duration_, int hitCount_)
 		: id(id_)
 		, filename(filename_)
@@ -40,7 +52,8 @@ inline void ProfilerAdd(const char* id, const char* filename, int line, Profiler
 void ProfilerReset();
 
 
-const std::vector<ProfilerDataPoint>& ProfilerGetAccumulatedStatistics();
+using ProfilerFrameStatistics = std::vector<ProfilerDataPoint>;
+const std::vector<ProfilerFrameStatistics>& ProfilerGetAccumulatedStatistics();
 
 
 struct ProfilerTimer
@@ -54,6 +67,11 @@ struct ProfilerTimer
 	}
 
 	~ProfilerTimer()
+	{
+		end();
+	}
+
+	void end()
 	{
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - startTime;

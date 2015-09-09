@@ -290,7 +290,7 @@ void KillGameObject(GameObject& gameObject)
 
 void UpdateAI(const Time& time)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
 		if (alien.isAlive)
@@ -303,7 +303,7 @@ void UpdateAI(const Time& time)
 
 void UpdateWorld(const Time& time)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	static vector<pair<ObjectId, ObjectId>> collidingPairs;
 	static vector<ObjectId> collidingWithWorld;
@@ -384,7 +384,7 @@ void CreateWall(const Vector2& startPosition, const Vector2& endPosition)
 	}
 	else
 	{
-		assert(IsSimilar(startPosition.x, endPosition.x));
+		//assert(IsSimilar(startPosition.x, endPosition.x));
 		// vertical wall
 		if (startPosition.x < playerPosition.x)
 		{

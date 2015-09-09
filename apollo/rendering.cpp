@@ -95,7 +95,7 @@ bool LoadResources()
 
 void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClearColor(0, 0, 0.2f, 1);
@@ -217,7 +217,7 @@ void RollCredits(const Time& time)
 
 void RenderUI(const Time& time, int windowWidth, int windowHeight)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -252,7 +252,7 @@ void RenderUI(const Time& time, int windowWidth, int windowHeight)
 
 void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight*/)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	const auto& tweakables = Tweakables::GetInstance().GetTweakables();
 	for (const auto& tweakable : tweakables)
@@ -317,16 +317,40 @@ void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight)
 
 	const auto& accumulatedStatistics = ProfilerGetAccumulatedStatistics();
 
+	const auto& lastFrameStatistics = accumulatedStatistics.back();
 	float dx = 0;
 	float dy = 50.0f;
-	for (const auto& dataPoint : accumulatedStatistics)
+	for (const auto& dataPoint : lastFrameStatistics)
 	{
-		fonsSetFont(fontStash.get(), fontNormal);
-		fonsSetSize(fontStash.get(), 24.0f);
-		fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
-		char text[255];
-		_snprintf_s(text, 255, "%-40s %9lldus %9lldus", dataPoint.id, dataPoint.duration.count() / 1000, dataPoint.duration.count() / (dataPoint.hitCount * 1000));
-		fonsDrawText(fontStash.get(), dx, dy, text, nullptr);
-		dy += 20.0f;
+		if (dataPoint.hitCount > 0)
+		{
+			fonsSetFont(fontStash.get(), fontNormal);
+			fonsSetSize(fontStash.get(), 24.0f);
+			fonsSetColor(fontStash.get(), glfonsRGBA(255, 255, 255, 255));
+			char text[255];
+			_snprintf_s(text, 255, "%-40s %9lldus %8d %9lldus", dataPoint.id, dataPoint.duration.count() / 1000, dataPoint.hitCount, dataPoint.duration.count() / (dataPoint.hitCount * 1000));
+			fonsDrawText(fontStash.get(), dx, dy, text, nullptr);
+			dy += 20.0f;
+		}
+	}
+
+	// 200px high = 1/30s
+	float graphHeight = 200.0f;
+	float performanceGraphScale = graphHeight * 1e-6f / 30.0f; // scale in pixels per ns
+
+	DebugDrawLine(Vector2 { -windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Vector2 { windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Color::Red);
+
+	float graphBarWidth = 20.0f;
+	int graphHistorySize = windowWidth / static_cast<int>(graphBarWidth);
+	int numBars = min(graphHistorySize, static_cast<int>(accumulatedStatistics.size()));
+	for (size_t i = 0; i < numBars; ++i)
+	{
+		const auto& frameStatistics = accumulatedStatistics[accumulatedStatistics.size() - numBars + i];
+		float frameTime = static_cast<float>(frameStatistics[0].duration.count());
+		float x = i * graphBarWidth - windowWidth / 2.0f;
+		float y = -windowHeight / 2.0f;
+		float w = graphBarWidth;
+		float h = performanceGraphScale * frameTime;
+		DebugDrawBox2d(Vector2 { x, y }, Vector2 { x + w, y + h }, Color::Cyan);
 	}
 }

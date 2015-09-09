@@ -178,7 +178,7 @@ AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
 
 void AIModelAlienMothership::Update(const Time& /*time*/)
 {
-	PROFILER_TIMER();
+	PROFILER_TIMER_FUNCTION();
 
 	const int numberOfLaunchesPerWave = 20;
 

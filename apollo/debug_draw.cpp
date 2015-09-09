@@ -135,6 +135,18 @@ void DebugDrawBox(const glm::mat4& transform, float w, float h, Color color)
 	DebugDrawLine(_d, _a, color);
 }
 
+void DebugDrawBox2d(const Vector2& min, const Vector2& max, Color color)
+{
+	auto a = Vector2 { min.x, min.y };
+	auto b = Vector2 { min.x, max.y };
+	auto c = Vector2 { max.x, max.y };
+	auto d = Vector2 { max.x, min.y };
+	DebugDrawLine(a, b, color);
+	DebugDrawLine(b, c, color);
+	DebugDrawLine(c, d, color);
+	DebugDrawLine(d, a, color);
+}
+
 void DebugDrawRender(const glm::mat4& projectionMatrix)
 {
 	glUseProgram(shaderProgram);

@@ -144,6 +144,8 @@ int main(int /*argc*/, char** /*argv*/)
 
 	for (;;)
 	{
+		PROFILER_TIMER_BEGIN(main_loop);
+
 		auto currentTime = high_resolution_clock::now();
 		auto elapsedTime = duration_cast<duration<float>>(currentTime - startTime).count();
 		auto deltaTime = duration_cast<duration<float>>(currentTime - lastTime).count();
@@ -184,6 +186,8 @@ int main(int /*argc*/, char** /*argv*/)
 		RenderWorld(time, windowWidth, windowHeight);
 		RenderUI(time, windowWidth, windowHeight);
 
+		PROFILER_TIMER_END(main_loop);
+
 		if (renderProfilerUI)
 		{
 			RenderProfiler(time, windowWidth, windowHeight);
@@ -194,6 +198,8 @@ int main(int /*argc*/, char** /*argv*/)
 			RenderDebugUI(time, windowWidth, windowHeight);
 		}
 		ImGui::Render();
+
+
 		CheckOpenGLErrors();
 
 		SDL_GL_SwapWindow(window.get());
