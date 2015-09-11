@@ -12,8 +12,14 @@ void ProfilerInit()
 	profileData.reserve(10000);
 }
 
-void ProfilerReset()
+void ProfilerShutdown()
 {
+	profileData.reserve(10000);
+}
+
+void ProfilerBeginFrame()
+{
+	ETWRenderFrameMark();
 	profileData.clear();
 }
 

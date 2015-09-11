@@ -63,6 +63,7 @@ void ReadPlayerInputFromJoystick(SDL_Joystick& joystick)
 int main(int /*argc*/, char** /*argv*/)
 {
 	ProfilerInit();
+	auto profilerQuiter = make_scope_exit(ProfilerShutdown);
 
 	SeedRandom(2);
 
@@ -144,6 +145,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 	for (;;)
 	{
+		PROFILER_BEGIN_FRAME();
 		PROFILER_TIMER_BEGIN(main_loop);
 
 		auto currentTime = high_resolution_clock::now();
@@ -154,8 +156,6 @@ int main(int /*argc*/, char** /*argv*/)
 		lastTime = currentTime;
 
 		ImGui_ImplSdl_NewFrame(window.get());
-
-		ProfilerReset();
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))

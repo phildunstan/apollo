@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{704CB2AA-B1C3-45A4-87D6-F79FC6C38435}</ProjectGuid>
     <RootNamespace>apollo</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -45,6 +46,7 @@
     <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
     <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
     <Import Project="..\..\3rdparty\imgui\imgui.props" />
+    <Import Project="..\..\3rdparty\etwpackage\etwpackage.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -58,6 +60,7 @@
     <Import Project="..\..\3rdparty\FTGL\FTGL.props" />
     <Import Project="..\..\3rdparty\fontstash\fontstash.props" />
     <Import Project="..\..\3rdparty\imgui\imgui.props" />
+    <Import Project="..\..\3rdparty\etwpackage\etwpackage.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -135,6 +138,7 @@
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="TraceLoggingProvider.wprp" />
     <None Include="debug_fs.glsl" />
     <None Include="debug_vs.glsl" />
     <None Include="sprite_vs.glsl">

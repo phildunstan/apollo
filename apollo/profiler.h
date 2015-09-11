@@ -3,6 +3,10 @@
 #include <chrono>
 #include <vector>
 
+#include "ETWProviders/etwprof.h"
+
+#define PROFILER_BEGIN_FRAME() ProfilerBeginFrame();
+
 #define PROFILER_TIMER_FUNCTION() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__)
 
 #define PROFILER_TIMER_BEGIN(ID) ProfilerTimer timer##ID(#ID, __FILE__, __LINE__)
@@ -43,13 +47,14 @@ extern std::vector<ProfilerDataPoint> profileData;
 
 
 void ProfilerInit();
+void ProfilerShutdown();
 
 inline void ProfilerAdd(const char* id, const char* filename, int line, ProfilerDurationUnit duration, int hitCount)
 {
 	profileData.emplace_back(id, filename, line, duration, hitCount);
 }
 
-void ProfilerReset();
+void ProfilerBeginFrame();
 
 
 using ProfilerFrameStatistics = std::vector<ProfilerDataPoint>;
@@ -59,10 +64,11 @@ const std::vector<ProfilerFrameStatistics>& ProfilerGetAccumulatedStatistics();
 struct ProfilerTimer
 {
 	ProfilerTimer(const char* id_, const char* filename_, int line_)
-		: id(id_)
-		, filename(filename_)
-		, line(line_)
-		, startTime(std::chrono::high_resolution_clock::now())
+		: id { id_ }
+		, filename { filename_ }
+		, line { line_ }
+		, startTime { std::chrono::high_resolution_clock::now() }
+		, etwTimestamp { ETWBegin(id) }
 	{
 	}
 
@@ -76,10 +82,12 @@ struct ProfilerTimer
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - startTime;
 		ProfilerAdd(id, filename, line, duration, 1);
+		ETWEnd(id, etwTimestamp);
 	}
 
 	const char* id;
 	const char* filename;
 	int line;
 	ProfilerTimeUnit startTime;
+	int64 etwTimestamp;
 };

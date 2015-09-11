@@ -39,6 +39,7 @@
     <None Include="sprite_vs.glsl" />
     <None Include="debug_vs.glsl" />
     <None Include="debug_fs.glsl" />
+    <None Include="TraceLoggingProvider.wprp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="credits.txt" />
