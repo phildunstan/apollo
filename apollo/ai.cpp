@@ -97,6 +97,11 @@ AIModelAlienRandom::AIModelAlienRandom(GameObject& alien)
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
 }
 
+std::unique_ptr<AIModel> AIModelAlienRandom::Clone() const
+{
+	return make_unique<AIModelAlienRandom>(*this);
+}
+
 void AIModelAlienRandom::Update(const Time & time)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
@@ -125,6 +130,11 @@ AIModelAlienShy::AIModelAlienShy(GameObject& alien)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
+}
+
+std::unique_ptr<AIModel> AIModelAlienShy::Clone() const
+{
+	return make_unique<AIModelAlienShy>(*this);
 }
 
 void AIModelAlienShy::Update(const Time & time)
@@ -160,6 +170,11 @@ AIModelAlienChase::AIModelAlienChase(GameObject & alien)
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
 }
 
+std::unique_ptr<AIModel> AIModelAlienChase::Clone() const
+{
+	return make_unique<AIModelAlienChase>(*this);
+}
+
 void AIModelAlienChase::Update(const Time & time)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
@@ -175,6 +190,10 @@ AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
 	offspring.reserve(20);
 }
 
+std::unique_ptr<AIModel> AIModelAlienMothership::Clone() const
+{
+	return make_unique<AIModelAlienMothership>(*this);
+}
 
 void AIModelAlienMothership::Update(const Time& /*time*/)
 {
@@ -229,6 +248,11 @@ ObjectId AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
 AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
 	: alien(alien)
 {
+}
+
+std::unique_ptr<AIModel> AIModelAlienOffspring::Clone() const
+{
+	return make_unique<AIModelAlienOffspring>(*this);
 }
 
 TWEAKABLE(float, cohesionMagnitude, "Alien.Offspring.CohesionMagnitude", 1000.0f, 0.0f, 1000.0f);
@@ -365,6 +389,11 @@ void AIModelAlienOffspring::Update(const Time& time)
 AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
 	: alien(alien)
 {
+}
+
+std::unique_ptr<AIModel> AIModelAlienWallHugger::Clone() const
+{
+	return make_unique<AIModelAlienWallHugger>(*this);
 }
 
 TWEAKABLE(float, wallHuggerSpeed, "Alien.WallHugger.Speed", 150.0f, 0.0f, 1000.0f);

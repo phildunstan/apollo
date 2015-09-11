@@ -74,6 +74,7 @@ Matrix4x4 CalculateObjectTransform(const Vector2& position, const Vector2& facin
 
 void SeedRandom(uint64_t seed);
 float GetRandomFloat01();
+uint64_t GetRandomUint64();
 Vector2 GetRandomVectorOnCircle();
 Vector2 GetRandomVectorInBox(const Vector2& min, const Vector2& max);
 

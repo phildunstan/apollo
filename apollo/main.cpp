@@ -24,13 +24,14 @@
 #include "gl_helpers.h"
 #include "sdl_helpers.h"
 #include "math_helpers.h"
-#include "Sprite.h"
+#include "sprite.h"
 #include "debug_draw.h"
 #include "physics.h"
 #include "player.h"
 #include "rendering.h"
 #include "tweakables.h"
 #include "world.h"
+#include "recording.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -143,17 +144,14 @@ int main(int /*argc*/, char** /*argv*/)
 	auto startTime = high_resolution_clock::now();
 	auto lastTime = startTime;
 
+	enum class GameUpdateMode { Paused, Play, Replay };
+	GameUpdateMode updateMode = GameUpdateMode::Play;
+	int currentSnapshotIndex = 0;
+
 	for (;;)
 	{
 		PROFILER_BEGIN_FRAME();
 		PROFILER_TIMER_BEGIN(main_loop);
-
-		auto currentTime = high_resolution_clock::now();
-		auto elapsedTime = duration_cast<duration<float>>(currentTime - startTime).count();
-		auto deltaTime = duration_cast<duration<float>>(currentTime - lastTime).count();
-		deltaTime = std::min(deltaTime, 0.1f); // cap deltaTime to 0.1s
-		Time time { elapsedTime, deltaTime };
-		lastTime = currentTime;
 
 		ImGui_ImplSdl_NewFrame(window.get());
 
@@ -166,27 +164,83 @@ int main(int /*argc*/, char** /*argv*/)
 				return 0;
 				break;
 			case SDL_KEYDOWN:
-				if (event.key.keysym.sym == SDLK_BACKQUOTE)
+				switch (event.key.keysym.sym)
+				{
+				case SDLK_BACKQUOTE:
 					renderDebugUI = !renderDebugUI;
-				if (event.key.keysym.sym == SDLK_F11)
+					break;
+				case SDLK_F11:
 					renderProfilerUI = !renderProfilerUI;
+					break;
+				case SDLK_LEFT:
+					currentSnapshotIndex = std::max(currentSnapshotIndex - 1, 0);
+					updateMode = GameUpdateMode::Replay;
+					break;
+				case SDLK_RIGHT:
+					if (currentSnapshotIndex == GetSnapshotCount() - 1)
+					{
+						updateMode = GameUpdateMode::Play;
+					}
+					else
+					{
+						currentSnapshotIndex = std::min(currentSnapshotIndex + 1, GetSnapshotCount());
+						updateMode = GameUpdateMode::Replay;
+					}
+					break;
+				}
 				break;
 			}
 			ImGui_ImplSdl_ProcessEvent(&event);
 		}
 
-		if (joystick)
-		{
-			ReadPlayerInputFromJoystick(*joystick);
-		}
-		ApplyPlayerInput(time, playerInput);
 
-		UpdateWorld(time);
+		Time time;
+		uint64_t frameSeed { 0 };
+
+		switch (updateMode)
+		{
+		case GameUpdateMode::Paused:
+			break;
+
+		case GameUpdateMode::Play:
+			{
+				frameSeed = GetRandomUint64();
+				SeedRandom(frameSeed);
+
+				auto currentTime = high_resolution_clock::now();
+				time.elapsedTime = duration_cast<duration<float>>(currentTime - startTime).count();
+				time.deltaTime = std::min(duration_cast<duration<float>>(currentTime - lastTime).count(), 0.1f); // cap deltaTime to 0.1s
+				lastTime = currentTime;
+
+				if (joystick)
+				{
+					ReadPlayerInputFromJoystick(*joystick);
+				}
+			}
+			break;
+
+		case GameUpdateMode::Replay:
+			ReplaySnapshot(currentSnapshotIndex, time, frameSeed, playerInput);
+			SeedRandom(frameSeed);
+			break;
+		};
+
+		if (updateMode != GameUpdateMode::Paused)
+		{
+			ApplyPlayerInput(time, playerInput);
+			UpdateWorld(time);
+		}
 
 		RenderWorld(time, windowWidth, windowHeight);
 		RenderUI(time, windowWidth, windowHeight);
 
 		PROFILER_TIMER_END(main_loop);
+
+		if (updateMode == GameUpdateMode::Play)
+		{
+			currentSnapshotIndex = CreateSnapshot(time, frameSeed, playerInput);
+		}
+		ValidateSnapshot(currentSnapshotIndex, time, frameSeed);
 
 		if (renderProfilerUI)
 		{
@@ -198,7 +252,6 @@ int main(int /*argc*/, char** /*argv*/)
 			RenderDebugUI(time, windowWidth, windowHeight);
 		}
 		ImGui::Render();
-
 
 		CheckOpenGLErrors();
 

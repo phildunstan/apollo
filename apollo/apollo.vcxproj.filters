@@ -15,6 +15,7 @@
     <ClCompile Include="tweakables.cpp" />
     <ClCompile Include="game_object.cpp" />
     <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="recording.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
@@ -33,6 +34,7 @@
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="tweakables.h" />
     <ClInclude Include="profiler.h" />
+    <ClInclude Include="recording.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sprite_fs.glsl" />

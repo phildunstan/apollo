@@ -5,7 +5,8 @@
 using namespace std;
 
 static mt19937_64 randomEngine;
-static uniform_real_distribution<float> randomFloat01(0.0f, 1.0f);
+static uniform_real_distribution<float> randomFloat01 { 0.0f, 1.0f };
+static uniform_int_distribution<uint64_t> randomUint64;
 
 Matrix4x4 CalculateObjectTransform(const Vector3& position, const Vector3& facing)
 {
@@ -33,6 +34,11 @@ void SeedRandom(uint64_t seed)
 float GetRandomFloat01()
 {
 	return randomFloat01(randomEngine);
+}
+
+uint64_t GetRandomUint64()
+{
+	return randomUint64(randomEngine);
 }
 
 Vector2 GetRandomVectorOnCircle()

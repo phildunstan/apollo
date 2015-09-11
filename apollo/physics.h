@@ -9,6 +9,7 @@
 
 struct RigidBody
 {
+	RigidBody() = default;
 	RigidBody(ObjectId _objectId, const Vector2& _position, const Vector2& _facing)
 		: objectId { _objectId }
 		, position { _position }
@@ -18,14 +19,13 @@ struct RigidBody
 	}
 
 	RigidBody(RigidBody&&) = default;
+	RigidBody(const RigidBody&) = default;
 	RigidBody& operator=(RigidBody&&) = default;
+	RigidBody& operator=(const RigidBody&) = default;
 
-	RigidBody(const RigidBody&) = delete;
-	RigidBody& operator=(const RigidBody&) = delete;
-
-	ObjectId objectId;
-	Vector2 position;
-	Vector2 facing;
+	ObjectId objectId { 0 };
+	Vector2 position { 0.0f, 0.0f };
+	Vector2 facing { 0.0f, 0.0f };
 	Vector2 velocity { 0.0f, 0.0f };
 	float angularVelocity { 0.0f };
 };
@@ -46,6 +46,7 @@ inline CollisionLayer operator|(CollisionLayer lhs, CollisionLayer rhs)
 
 struct CollisionObject
 {
+	CollisionObject() = default;
 	CollisionObject(ObjectId _objectId, const Vector2& _aabbDimensions)
 		: objectId(_objectId)
 		, boundingBoxDimensions(_aabbDimensions)
@@ -53,13 +54,12 @@ struct CollisionObject
 	}
 
 	CollisionObject(CollisionObject&&) = default;
+	CollisionObject(const CollisionObject&) = default;
 	CollisionObject& operator=(CollisionObject&&) = default;
+	CollisionObject& operator=(const CollisionObject&) = default;
 
-	CollisionObject(const CollisionObject&) = delete;
-	CollisionObject& operator=(const CollisionObject&) = delete;
-
-	ObjectId objectId;
-	Vector2 boundingBoxDimensions;
+	ObjectId objectId { 0 };
+	Vector2 boundingBoxDimensions { 0.0f, 0.0f };
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 1.0f };
 

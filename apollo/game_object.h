@@ -24,21 +24,40 @@ struct GameObject
 	template <GameObjectType GameObjectTypeT>
 	static GameObject CreateGameObject();
 
+	GameObject() = default;
 	GameObject(GameObject&&) = default;
 	GameObject& operator=(GameObject&&) = default;
 
-	GameObject(const GameObject&) = delete;
-	GameObject& operator=(const GameObject&) = delete;
+	GameObject(const GameObject& other)
+		: objectId { other.objectId }
+		, type { other.type }
+		, isAlive { other.isAlive }
+		, timeOfLastShot { other.timeOfLastShot }
+		, aiModel {}
+	{
+		if (other.aiModel)
+			aiModel = other.aiModel->Clone();
+	}
 
-	ObjectId objectId;
-	GameObjectType type;
+	const GameObject& operator=(const GameObject& other)
+	{
+		objectId = other.objectId;
+		type = other.type;
+		isAlive = other.isAlive;
+		timeOfLastShot = other.timeOfLastShot;
+		if (other.aiModel)
+			aiModel = other.aiModel->Clone();
+		else
+			aiModel.reset();
+		return *this;
+	}
+
+	ObjectId objectId { 0 };
+	GameObjectType type { GameObjectType::Player };
 	bool isAlive { true };
 	float timeOfLastShot { 0.0f };
 
 	std::unique_ptr<AIModel> aiModel;
-
-private:
-	GameObject() {}
 };
 
 
