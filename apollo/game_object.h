@@ -33,10 +33,7 @@ struct GameObject
 		, type { other.type }
 		, isAlive { other.isAlive }
 		, timeOfLastShot { other.timeOfLastShot }
-		, aiModel {}
 	{
-		if (other.aiModel)
-			aiModel = other.aiModel->Clone();
 	}
 
 	const GameObject& operator=(const GameObject& other)
@@ -45,10 +42,6 @@ struct GameObject
 		type = other.type;
 		isAlive = other.isAlive;
 		timeOfLastShot = other.timeOfLastShot;
-		if (other.aiModel)
-			aiModel = other.aiModel->Clone();
-		else
-			aiModel.reset();
 		return *this;
 	}
 
@@ -56,8 +49,6 @@ struct GameObject
 	GameObjectType type { GameObjectType::Player };
 	bool isAlive { true };
 	float timeOfLastShot { 0.0f };
-
-	std::unique_ptr<AIModel> aiModel;
 };
 
 

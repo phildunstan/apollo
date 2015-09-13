@@ -34,7 +34,6 @@ GameObject GameObject::CreateGameObject()
 	GameObject object;
 	object.objectId = GetNextObjectId();
 	object.type = GameObjectTypeT;
-	object.aiModel = nullptr;
 	return object;
 }
 

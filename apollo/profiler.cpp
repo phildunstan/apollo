@@ -3,6 +3,14 @@
 
 #include "profiler.h"
 
+// Define the GUID to use in TraceLoggingProviderRegister 
+// {F053E693-0B6D-4CDE-9AC5-2FE50524C238}
+TRACELOGGING_DEFINE_PROVIDER(
+	ProfilerTraceLoggingProvider,
+	"ApolloTraceLoggingProvider",
+	(0xF053E693, 0x0B6D, 0x4CDE, 0x9A, 0xC5, 0x2F, 0xE5, 0x05, 0x24, 0xC2, 0x38));
+
+
 using namespace std;
 
 vector<ProfilerDataPoint> profileData;
@@ -10,16 +18,19 @@ vector<ProfilerDataPoint> profileData;
 void ProfilerInit()
 {
 	profileData.reserve(10000);
+
+	// Register the windows Trace Logging provider
+	TraceLoggingRegister(ProfilerTraceLoggingProvider);
 }
 
 void ProfilerShutdown()
 {
-	profileData.reserve(10000);
+	// Stop TraceLogging and unregister the provider
+	TraceLoggingUnregister(ProfilerTraceLoggingProvider);
 }
 
 void ProfilerBeginFrame()
 {
-	ETWRenderFrameMark();
 	profileData.clear();
 }
 

@@ -44,8 +44,7 @@ GameObject& GetGameObject(ObjectId objectId)
 {
 	if (player.objectId == objectId)
 		return player;
-	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
-	// in increasing ObjectId order, and that the vectors are never reordered.
+	// we can use a binary search if we can guarantee that elements are never reordered.
 	auto enemyIter = lower_bound(begin(aliens), end(aliens), objectId, [] (const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
 	if ((enemyIter != end(aliens)) && (enemyIter->objectId == objectId))
 		return *enemyIter;
@@ -95,7 +94,7 @@ GameObject& CreateAlien()
 	tie(position, facing) = findRandomPlaceToSpawnAlien();
 	CreateAlienPhysics(alien.objectId, AlienType, position, facing);
 
-	alien.aiModel = CreateAI(alien);
+	CreateAI(alien);
 
 	return alien;
 }
@@ -223,8 +222,7 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 	Vector2 collisionBoundingBoxDimensions = metaData.boundingBoxDimensions;
 	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoundingBoxDimensions);
 	CreateAlienPhysics(alien.objectId, alien.type, position, facing);
-
-	alien.aiModel = CreateAI(alien);
+	CreateAI(alien);
 
 	return alien;
 }
@@ -268,7 +266,6 @@ void InitWorld()
 	{
 		CreateRandomAlien();
 	}
-	//CreateAlien<GameObjectType::AlienWallHugger>();
 }
 
 
@@ -295,7 +292,8 @@ void UpdateAI(const Time& time)
 	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
 		if (alien.isAlive)
 		{
-			alien.aiModel->Update(time);
+			auto& aiModel = GetAIModel(alien.objectId);
+			aiModel.Update(time);
 		}
 	});
 }

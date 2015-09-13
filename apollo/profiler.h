@@ -3,14 +3,28 @@
 #include <chrono>
 #include <vector>
 
-#include "ETWProviders/etwprof.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h> // Defines macros used by TraceLoggingProvider.h
+#undef min
+#undef max
+#include <TraceLoggingProvider.h>  // The native TraceLogging API
+#include <TraceLoggingActivity.h>
 
-#define PROFILER_BEGIN_FRAME() ProfilerBeginFrame();
+// Forward-declare the ProfilerTraceLoggingProvider variable that you will use for tracing in this component
+TRACELOGGING_DECLARE_PROVIDER(ProfilerTraceLoggingProvider);
 
-#define PROFILER_TIMER_FUNCTION() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__)
+#define PROFILER_BEGIN_FRAME() ProfilerBeginFrame()
 
-#define PROFILER_TIMER_BEGIN(ID) ProfilerTimer timer##ID(#ID, __FILE__, __LINE__)
-#define PROFILER_TIMER_END(ID) timer##ID.end()
+#define PROFILER_TIMER_FUNCTION() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__); \
+	TraceLoggingFunction(ProfilerTraceLoggingProvider)
+
+#define PROFILER_TIMER_BEGIN(ID) ProfilerTimer timer##ID(#ID, __FILE__, __LINE__); \
+	TraceLoggingActivity<ProfilerTraceLoggingProvider> traceLoggingActivity; \
+	TraceLoggingWriteStart(traceLoggingActivity, #ID)
+
+#define PROFILER_TIMER_END(ID) timer##ID.end(); \
+	TraceLoggingWriteStop(traceLoggingActivity, #ID)
+
 
 using ProfilerTimeUnit = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using ProfilerDurationUnit = std::chrono::nanoseconds;
@@ -68,7 +82,6 @@ struct ProfilerTimer
 		, filename { filename_ }
 		, line { line_ }
 		, startTime { std::chrono::high_resolution_clock::now() }
-		, etwTimestamp { ETWBegin(id) }
 	{
 	}
 
@@ -82,12 +95,10 @@ struct ProfilerTimer
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - startTime;
 		ProfilerAdd(id, filename, line, duration, 1);
-		ETWEnd(id, etwTimestamp);
 	}
 
 	const char* id;
 	const char* filename;
 	int line;
 	ProfilerTimeUnit startTime;
-	int64 etwTimestamp;
 };

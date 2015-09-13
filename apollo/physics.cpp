@@ -24,8 +24,7 @@ void InitPhysics()
 
 RigidBody& GetRigidBody(ObjectId objectId)
 {
-	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
-	// in increasing ObjectId order, and that the vectors are never reordered.
+	// we can use a binary search if we can guarantee that elements are never reordered.
 	auto rigidBodyIter = lower_bound(begin(rigidBodies), end(rigidBodies), objectId, [] (const auto& rigidBody, auto objectId) { return rigidBody.objectId < objectId; });
 	assert((rigidBodyIter != end(rigidBodies)) && (rigidBodyIter->objectId == objectId));
 	return *rigidBodyIter;
@@ -33,8 +32,7 @@ RigidBody& GetRigidBody(ObjectId objectId)
 
 CollisionObject& GetCollisionObject(ObjectId objectId)
 {
-	// we can use a binary search if we can guarantee that elements are only added to the RigidBody vectors
-	// in increasing ObjectId order, and that the vectors are never reordered.
+	// we can use a binary search if we can guarantee that elements are never reordered.
 	auto collisionObjectIter = lower_bound(begin(collisionObjects), end(collisionObjects), objectId, [] (const auto& collisionObjects, auto objectId) { return collisionObjects.objectId < objectId; });
 	assert((collisionObjectIter != end(collisionObjects)) && (collisionObjectIter->objectId == objectId));
 	return *collisionObjectIter;
