@@ -58,9 +58,9 @@ void ApplyPlayerInput(const Time& time, const PlayerInput& playerInput)
 
 
 
-void IncrementPlayerScore(const GameObject& gameObject)
+void IncrementPlayerScoreForKilling(ObjectId objectId)
 {
-	switch (gameObject.type)
+	switch (GetType(objectId))
 	{
 	case GameObjectType::Player:
 		break;

@@ -121,7 +121,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 		if (bullet.isAlive)
 		{
 			auto& bulletRB = GetRigidBody(bullet.objectId);
-			const auto& renderModel = GetRenderModel(bullet.type);
+			const auto& renderModel = GetRenderModel(GetType(bullet.objectId));
 			auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, bulletRB.position, bulletRB.facing);
 			DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 		}
@@ -133,7 +133,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 		if (enemy.isAlive)
 		{
 			auto& enemyRB = GetRigidBody(enemy.objectId);
-			const auto& renderModel = GetRenderModel(enemy.type);
+			const auto& renderModel = GetRenderModel(GetType(enemy.objectId));
 			auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, enemyRB.position, enemyRB.facing);
 			DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 		}
@@ -142,7 +142,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 	// draw the player
 	{
 		auto& playerRB = GetRigidBody(player.objectId);
-		const auto& renderModel = GetRenderModel(player.type);
+		const auto& renderModel = GetRenderModel(GetType(player.objectId));
 		auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, playerRB.position, playerRB.facing);
 		DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
 	}

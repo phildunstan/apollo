@@ -33,7 +33,6 @@ GameObject GameObject::CreateGameObject()
 {
 	GameObject object;
 	object.objectId = GetNextObjectId(GameObjectTypeT);
-	object.type = GameObjectTypeT;
 	return object;
 }
 

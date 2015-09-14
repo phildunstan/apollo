@@ -19,7 +19,6 @@ struct GameObject
 
 	GameObject(const GameObject& other)
 		: objectId { other.objectId }
-		, type { other.type }
 		, isAlive { other.isAlive }
 	{
 	}
@@ -27,13 +26,11 @@ struct GameObject
 	const GameObject& operator=(const GameObject& other)
 	{
 		objectId = other.objectId;
-		type = other.type;
 		isAlive = other.isAlive;
 		return *this;
 	}
 
 	ObjectId objectId { };
-	GameObjectType type { GameObjectType::Player };
 	bool isAlive { true };
 };
 

@@ -25,7 +25,7 @@ std::vector<AIModelAlienWallHugger> wallHuggerAIs;
 
 void CreateAI(GameObject& gameObject)
 {
-	switch (gameObject.type)
+	switch (GetType(gameObject.objectId))
 	{
 	case GameObjectType::Player:
 		break;
@@ -305,11 +305,9 @@ void AIModelAlienOffspring::Update(const Time& time)
 
 		++numberOfAllNeighbors;
 
-		auto& alien = GetGameObject(objectId);
-		const auto& nearbyAlien = GetGameObject(nearbyAlienId);
 		const auto& nearbyAlienRB = GetRigidBody(nearbyAlienId);
 		float nearbyAlienDistance = glm::distance(nearbyAlienRB.position, rigidBody.position);
-		if (nearbyAlien.type == alien.type)
+		if (GetType(nearbyAlienId) == GetType(objectId))
 		{
 			++numberOfOffspringNeighbors;
 

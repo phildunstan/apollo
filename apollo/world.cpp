@@ -68,9 +68,9 @@ tuple<Vector2, Vector2> findRandomPlaceToSpawnAlien()
 	return make_tuple(position, facing);
 }
 
-void CreateAlienPhysics(ObjectId objectId, GameObjectType type, const Vector2& position, const Vector2& facing)
+void CreateAlienPhysics(ObjectId objectId, const Vector2& position, const Vector2& facing)
 {
-	const auto& metaData = GetGameObjectMetaData(type);
+	const auto& metaData = GetGameObjectMetaData(GetType(objectId));
 	AddRigidBody(objectId, position, facing);
 	auto& collisionObject = AddCollisionObject(objectId, metaData.boundingBoxDimensions);
 	collisionObject.layer = CollisionLayer::Alien;
@@ -86,7 +86,7 @@ GameObject& CreateAlien()
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
 	tie(position, facing) = findRandomPlaceToSpawnAlien();
-	CreateAlienPhysics(alien.objectId, AlienType, position, facing);
+	CreateAlienPhysics(alien.objectId, position, facing);
 
 	CreateAI(alien);
 
@@ -212,10 +212,10 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
-	const auto& metaData = GetGameObjectMetaData(alien.type);
+	const auto& metaData = GetGameObjectMetaData(GetType(alien.objectId));
 	Vector2 collisionBoundingBoxDimensions = metaData.boundingBoxDimensions;
 	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoundingBoxDimensions);
-	CreateAlienPhysics(alien.objectId, alien.type, position, facing);
+	CreateAlienPhysics(alien.objectId, position, facing);
 	CreateAI(alien);
 
 	return alien;
@@ -263,17 +263,19 @@ void InitWorld()
 }
 
 
-void KillGameObject(GameObject& gameObject)
+void KillGameObject(ObjectId objectId)
 {
 	// player is invincible
-	if (gameObject.type == GameObjectType::Player)
+	if (GetType(objectId) == GameObjectType::Player)
 		return;
 
+	GameObject& gameObject = GetGameObject(objectId);
 	if (!gameObject.isAlive)
 		return;
-	IncrementPlayerScore(gameObject);
+	IncrementPlayerScoreForKilling(objectId);
 	gameObject.isAlive = false;
-	auto& collisionObject = GetCollisionObject(gameObject.objectId);
+
+	auto& collisionObject = GetCollisionObject(objectId);
 	collisionObject.layer = CollisionLayer::PendingDestruction;
 	collisionObject.layerMask = CollisionLayer::None;
 }
@@ -296,16 +298,15 @@ void UpdateWorld(const Time& time)
 	// resolve objects that have collided against the world
 	for (const auto objectId : collidingWithWorld)
 	{
-		auto& gameObject = GetGameObject(objectId);
-		if ((gameObject.type != GameObjectType::Player) && (gameObject.type != GameObjectType::AlienWallHugger))
-			KillGameObject(gameObject);
+		if ((GetType(objectId) != GameObjectType::Player) && (GetType(objectId) != GameObjectType::AlienWallHugger))
+			KillGameObject(objectId);
 	}
 
 	// resolve game object - game object collision pairs
 	for (const auto collidingPair : collidingPairs)
 	{
-		KillGameObject(GetGameObject(collidingPair.first));
-		KillGameObject(GetGameObject(collidingPair.second));
+		KillGameObject(collidingPair.first);
+		KillGameObject(collidingPair.second);
 	}
 
 	// update the AI

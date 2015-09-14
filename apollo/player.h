@@ -1,8 +1,8 @@
 #pragma once
 
+#include "game.h"
 #include "math_helpers.h"
 
-struct GameObject;
 struct Time;
 
 extern float playerMovementSpeed;
@@ -22,4 +22,4 @@ void ApplyPlayerInput(const Time& time, const PlayerInput& playerInput);
 
 extern int playerScore;
 
-void IncrementPlayerScore(const GameObject& gameObject);
+void IncrementPlayerScoreForKilling(ObjectId objectId);
