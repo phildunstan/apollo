@@ -32,7 +32,7 @@ template <GameObjectType GameObjectTypeT>
 GameObject GameObject::CreateGameObject()
 {
 	GameObject object;
-	object.objectId = GetNextObjectId();
+	object.objectId = GetNextObjectId(GameObjectTypeT);
 	object.type = GameObjectTypeT;
 	return object;
 }

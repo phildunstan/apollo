@@ -5,8 +5,10 @@
 #include <memory>
 #include <vector>
 
+#include "ai.h"
 #include "game.h"
 #include "game_object.h"
+#include "math_helpers.h"
 #include "physics.h"
 #include "player.h"
 #include "profiler.h"
@@ -18,6 +20,8 @@ struct Snapshot
 {
 	Time time;
 	uint64_t seed;
+	Vector2 minWorld;
+	Vector2 maxWorld;
 
 	PlayerInput playerInput;
 
@@ -28,7 +32,12 @@ struct Snapshot
 	vector<RigidBody> rigidBodies;
 	vector<CollisionObject> collisionObjects;
 
-	vector<std::unique_ptr<AIModel>> aiModels;
+	vector<AIModelAlienRandom> randomAIs;
+	vector<AIModelAlienShy> shyAIs;
+	vector<AIModelAlienChase> chaseAIs;
+	vector<AIModelAlienMothership> mothershipAIs;
+	vector<AIModelAlienOffspring> offspringAIs;
+	vector<AIModelAlienWallHugger> wallHuggerAIs;
 };
 
 vector<Snapshot> snapshots;
@@ -43,6 +52,8 @@ int CreateSnapshot(Time frameTime, uint64_t frameSeed, const PlayerInput& player
 
 	snapshot.time = frameTime;
 	snapshot.seed = frameSeed;
+	snapshot.minWorld = minWorld;
+	snapshot.maxWorld = maxWorld;
 
 	snapshot.playerInput = playerInput;
 
@@ -53,8 +64,12 @@ int CreateSnapshot(Time frameTime, uint64_t frameSeed, const PlayerInput& player
 	snapshot.rigidBodies = rigidBodies;
 	snapshot.collisionObjects = collisionObjects;
 
-	snapshot.aiModels.resize(aiModels.size());
-	transform(cbegin(aiModels), cend(aiModels), begin(snapshot.aiModels), [] (const unique_ptr<AIModel>& aiModelPtr) { return (aiModelPtr ? aiModelPtr->Clone() : unique_ptr<AIModel>()); });
+	snapshot.randomAIs = randomAIs;
+	snapshot.shyAIs = shyAIs;
+	snapshot.chaseAIs = chaseAIs;
+	snapshot.mothershipAIs = mothershipAIs;
+	snapshot.offspringAIs = offspringAIs;
+	snapshot.wallHuggerAIs = wallHuggerAIs;
 
 	return static_cast<int>(snapshots.size() - 1);
 }
@@ -67,6 +82,8 @@ void ReplaySnapshot(int snapshotIndex, Time& frameTime, uint64_t& frameSeed, Pla
 
 	frameTime = snapshot.time;
 	frameSeed = snapshot.seed;
+	minWorld = snapshot.minWorld;
+	maxWorld = snapshot.maxWorld;
 
 	playerInput = snapshot.playerInput;
 
@@ -77,8 +94,12 @@ void ReplaySnapshot(int snapshotIndex, Time& frameTime, uint64_t& frameSeed, Pla
 	rigidBodies = snapshot.rigidBodies;
 	collisionObjects = snapshot.collisionObjects;
 
-	aiModels.resize(snapshot.aiModels.size());
-	transform(cbegin(snapshot.aiModels), cend(snapshot.aiModels), begin(aiModels), [] (const unique_ptr<AIModel>& aiModelPtr) { return (aiModelPtr ? aiModelPtr->Clone() : unique_ptr<AIModel>()); });
+	randomAIs = snapshot.randomAIs;
+	shyAIs = snapshot.shyAIs;
+	chaseAIs = snapshot.chaseAIs;
+	mothershipAIs = snapshot.mothershipAIs;
+	offspringAIs = snapshot.offspringAIs;
+	wallHuggerAIs = snapshot.wallHuggerAIs;
 }
 
 int GetSnapshotCount()
@@ -94,6 +115,8 @@ void ValidateSnapshot(int snapshotIndex, Time frameTime, uint64_t frameSeed)
 
 	assert(snapshot.time == frameTime);
 	assert(snapshot.seed == frameSeed);
+	assert(snapshot.minWorld == minWorld);
+	assert(snapshot.maxWorld == maxWorld);
 
 	assert(snapshot.player.objectId == player.objectId);
 	assert(snapshot.aliens.size() == aliens.size());
@@ -102,6 +125,11 @@ void ValidateSnapshot(int snapshotIndex, Time frameTime, uint64_t frameSeed)
 	assert(snapshot.rigidBodies.size() == rigidBodies.size());
 	assert(snapshot.collisionObjects.size() == collisionObjects.size());
 
-	assert(snapshot.aiModels.size() == aiModels.size());
+	assert(snapshot.randomAIs.size() == randomAIs.size());
+	assert(snapshot.shyAIs.size() == shyAIs.size());
+	assert(snapshot.chaseAIs.size() == chaseAIs.size());
+	assert(snapshot.mothershipAIs.size() == mothershipAIs.size());
+	assert(snapshot.offspringAIs.size() == offspringAIs.size());
+	assert(snapshot.wallHuggerAIs.size() == wallHuggerAIs.size());
 }
 

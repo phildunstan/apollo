@@ -20,16 +20,10 @@ GameObject player { GameObject::CreateGameObject<GameObjectType::Player>() };
 vector<GameObject> bullets;
 vector<GameObject> aliens;
 
-ObjectId GetNextObjectId()
-{
-	static ObjectId objectId = 1;
-	return objectId++;
-}
-
 
 void CreatePlayerGameObject()
 {
-	assert(player.objectId != 0);
+	assert(player.objectId);
 	const auto& metaData = GetGameObjectMetaData(GameObjectType::Player);
 	Vector2 position { 50.0f, 20.0f };
 	Vector2 facing { 1.0f, 0.0f };
@@ -45,10 +39,10 @@ GameObject& GetGameObject(ObjectId objectId)
 	if (player.objectId == objectId)
 		return player;
 	// we can use a binary search if we can guarantee that elements are never reordered.
-	auto enemyIter = lower_bound(begin(aliens), end(aliens), objectId, [] (const auto& enemy, auto objectId) { return enemy.objectId < objectId; });
+	auto enemyIter = lower_bound(begin(aliens), end(aliens), objectId, [] (const auto& enemy, auto objectId) { return GetIndex(enemy.objectId) < GetIndex(objectId); });
 	if ((enemyIter != end(aliens)) && (enemyIter->objectId == objectId))
 		return *enemyIter;
-	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [] (const auto& bullet, auto objectId) { return bullet.objectId < objectId; });
+	auto bulletIter = lower_bound(begin(bullets), end(bullets), objectId, [] (const auto& bullet, auto objectId) { return GetIndex(bullet.objectId) < GetIndex(objectId); });
 	assert((bulletIter != end(bullets)) && (bulletIter->objectId == objectId));
 	return *bulletIter;
 }
@@ -284,19 +278,6 @@ void KillGameObject(GameObject& gameObject)
 	collisionObject.layerMask = CollisionLayer::None;
 }
 
-
-void UpdateAI(const Time& time)
-{
-	PROFILER_TIMER_FUNCTION();
-
-	for_each(begin(aliens), end(aliens), [&time] (GameObject& alien) {
-		if (alien.isAlive)
-		{
-			auto& aiModel = GetAIModel(alien.objectId);
-			aiModel.Update(time);
-		}
-	});
-}
 
 
 void UpdateWorld(const Time& time)

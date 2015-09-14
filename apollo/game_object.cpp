@@ -1,5 +1,12 @@
 #include "game_object.h"
 
+
+ObjectId GetNextObjectId(GameObjectType type)
+{
+	static uint32_t counter = 1;
+	return CreateObjectId(type, counter++);
+}
+
 std::vector<GameObjectMetaData> gameObjectMetaDatas;
 
 GameObjectMetaData& GetGameObjectMetaData(GameObjectType type)

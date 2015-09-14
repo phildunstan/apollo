@@ -23,7 +23,7 @@ struct RigidBody
 	RigidBody& operator=(RigidBody&&) = default;
 	RigidBody& operator=(const RigidBody&) = default;
 
-	ObjectId objectId { 0 };
+	ObjectId objectId {};
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 0.0f };
 	Vector2 velocity { 0.0f, 0.0f };
@@ -58,7 +58,7 @@ struct CollisionObject
 	CollisionObject& operator=(CollisionObject&&) = default;
 	CollisionObject& operator=(const CollisionObject&) = default;
 
-	ObjectId objectId { 0 };
+	ObjectId objectId {};
 	Vector2 boundingBoxDimensions { 0.0f, 0.0f };
 	Vector2 position { 0.0f, 0.0f };
 	Vector2 facing { 0.0f, 1.0f };

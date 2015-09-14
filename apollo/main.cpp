@@ -135,7 +135,7 @@ int main(int /*argc*/, char** /*argv*/)
 	auto debugDrawCleanup = make_scope_exit([] () { DebugDrawShutdown(); });
 
 	bool renderDebugUI = false;
-	bool renderProfilerUI = true;
+	bool renderProfilerUI = false;
 
 	InitPhysics();
 	InitWorld();

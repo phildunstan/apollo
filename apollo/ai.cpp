@@ -15,147 +15,69 @@
 
 using namespace std;
 
-std::vector<std::unique_ptr<AIModel>> aiModels;
-
-
-AIModel::AIModel(GameObject& gameObject)
-	: objectId(gameObject.objectId)
-{
-}
-
-
-class AIModelNull : public AIModel
-{
-public:
-	explicit AIModelNull(GameObject& alien);
-	AIModelNull(const AIModelNull& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-};
-
-
-class AIModelAlienRandom : public AIModel
-{
-public:
-	explicit AIModelAlienRandom(GameObject& alien);
-	AIModelAlienRandom(const AIModelAlienRandom& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-
-private:
-	float timeOfLastMovementChange { 0.0f };
-	float timeOfLastShot { 0.0f };
-};
-
-
-class AIModelAlienShy : public AIModel
-{
-public:
-	explicit AIModelAlienShy(GameObject& alien);
-	AIModelAlienShy(const AIModelAlienShy& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-
-private:
-	float timeOfLastMovementChange { 0.0f };
-};
-
-
-class AIModelAlienChase : public AIModel
-{
-public:
-	explicit AIModelAlienChase(GameObject& alien);
-	AIModelAlienChase(const AIModelAlienChase& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-};
-
-
-class AIModelAlienMothership : public AIModel
-{
-public:
-	explicit AIModelAlienMothership(GameObject& alien);
-	AIModelAlienMothership(const AIModelAlienMothership& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-
-private:
-	static ObjectId LaunchOffspring(const GameObject& parent);
-
-	enum class LaunchingMode { Waiting, Launching };
-	LaunchingMode currentMode { LaunchingMode::Waiting };
-	std::vector<ObjectId> offspring;
-};
-
-
-class AIModelAlienOffspring : public AIModel
-{
-public:
-	explicit AIModelAlienOffspring(GameObject& alien);
-	AIModelAlienOffspring(const AIModelAlienOffspring& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-};
-
-
-class AIModelAlienWallHugger : public AIModel
-{
-public:
-	explicit AIModelAlienWallHugger(GameObject& alien);
-	AIModelAlienWallHugger(const AIModelAlienWallHugger& other) = default;
-	std::unique_ptr<AIModel> Clone() const override;
-	void Update(const Time& time) override;
-
-private:
-	enum class MovementMode { Stationary, SlideLeft, SlideRight, Crossing };
-	MovementMode currentMovementMode { MovementMode::Stationary };
-
-	Vector2 wallStartPosition { 0.0f, 0.0f };
-};
-
+std::vector<AIModelAlienRandom> randomAIs;
+std::vector<AIModelAlienShy> shyAIs;
+std::vector<AIModelAlienChase> chaseAIs;
+std::vector<AIModelAlienMothership> mothershipAIs;
+std::vector<AIModelAlienOffspring> offspringAIs;
+std::vector<AIModelAlienWallHugger> wallHuggerAIs;
 
 
 void CreateAI(GameObject& gameObject)
 {
-	aiModels.emplace_back();
-	auto& aiModelPtr = aiModels.back();
 	switch (gameObject.type)
 	{
 	case GameObjectType::Player:
-		aiModelPtr = std::make_unique<AIModelNull>(gameObject);
 		break;
 	case GameObjectType::Bullet:
-		aiModelPtr = std::make_unique<AIModelNull>(gameObject);
 		break;
 	case GameObjectType::AlienRandom:
-		aiModelPtr = std::make_unique<AIModelAlienRandom>(gameObject);
+		randomAIs.emplace_back(gameObject);
 		break;
 	case GameObjectType::AlienChase:
-		aiModelPtr = std::make_unique<AIModelAlienChase>(gameObject);
+		chaseAIs.emplace_back(gameObject);
 		break;
 	case GameObjectType::AlienShy:
-		aiModelPtr = std::make_unique<AIModelAlienShy>(gameObject);
+		shyAIs.emplace_back(gameObject);
 		break;
 	case GameObjectType::AlienMothership:
-		aiModelPtr = std::make_unique<AIModelAlienMothership>(gameObject);
+		mothershipAIs.emplace_back(gameObject);
 		break;
 	case GameObjectType::AlienOffspring:
-		aiModelPtr = std::make_unique<AIModelAlienOffspring>(gameObject);
+		offspringAIs.emplace_back(gameObject);
 		break;
 	case GameObjectType::AlienWallHugger:
-		aiModelPtr = std::make_unique<AIModelAlienWallHugger>(gameObject);
+		wallHuggerAIs.emplace_back(gameObject);
 		break;
 	};
 }
 
 
-AIModel& GetAIModel(ObjectId objectId)
+template <typename AIType>
+void UpdateAIType(vector<AIType>& aiModels, const Time& time)
 {
-	// We can use a binary search if we can guarantee that elements are never reordered
-	auto aiModelIter = lower_bound(begin(aiModels), end(aiModels), objectId, [] (const auto& aiModelPtr, auto objectId) { return aiModelPtr && (aiModelPtr->objectId < objectId); });
-	assert((aiModelIter != end(aiModels)) && *aiModelIter && ((*aiModelIter)->objectId == objectId));
-	return **aiModelIter;
+	PROFILER_TIMER_FUNCTION();
+
+	for (auto& aiModel : aiModels)
+	{
+		if (GetGameObject(aiModel.objectId).isAlive)
+			aiModel.Update(time);
+	}
 }
+
+
+void UpdateAI(const Time& time)
+{
+	PROFILER_TIMER_FUNCTION();
+
+	UpdateAIType<AIModelAlienRandom>(randomAIs, time);
+	UpdateAIType<AIModelAlienShy>(shyAIs, time);
+	UpdateAIType<AIModelAlienChase>(chaseAIs, time);
+	UpdateAIType<AIModelAlienMothership>(mothershipAIs, time);
+	UpdateAIType<AIModelAlienOffspring>(offspringAIs, time);
+	UpdateAIType<AIModelAlienWallHugger>(wallHuggerAIs, time);
+}
+
 
 
 void UpdateRandomVelocity(ObjectId objectId, RigidBody& rigidBody, const Time& /*time*/, float lookAheadTime)
@@ -207,35 +129,17 @@ void UpdateChaseVelocity(ObjectId objectId, RigidBody& rigidBody, const Time& ti
 }
 
 
-AIModelNull::AIModelNull(GameObject& alien)
-	: AIModel(alien)
-{
-}
-
-std::unique_ptr<AIModel> AIModelNull::Clone() const
-{
-	return make_unique<AIModelNull>(*this);
-}
-
-void AIModelNull::Update(const Time& /*time*/)
-{
-}
-
-
 AIModelAlienRandom::AIModelAlienRandom(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
 }
 
-std::unique_ptr<AIModel> AIModelAlienRandom::Clone() const
-{
-	return make_unique<AIModelAlienRandom>(*this);
-}
-
 void AIModelAlienRandom::Update(const Time& time)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	auto& rigidBody = GetRigidBody(objectId);
 
 	const float maxTimeBetweenMovementChanges = 1.0f;
@@ -258,19 +162,16 @@ void AIModelAlienRandom::Update(const Time& time)
 }
 
 AIModelAlienShy::AIModelAlienShy(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
 }
 
-std::unique_ptr<AIModel> AIModelAlienShy::Clone() const
-{
-	return make_unique<AIModelAlienShy>(*this);
-}
-
 void AIModelAlienShy::Update(const Time& time)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	auto& rigidBody = GetRigidBody(objectId);
 	const float maxTimeBetweenMovementChanges = 1.0f;
 	if (time.elapsedTime - timeOfLastMovementChange > maxTimeBetweenMovementChanges)
@@ -296,35 +197,27 @@ void AIModelAlienShy::Update(const Time& time)
 
 
 AIModelAlienChase::AIModelAlienChase(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = 20.0f * (GetRandomFloat01() - 0.5f);
 }
 
-std::unique_ptr<AIModel> AIModelAlienChase::Clone() const
-{
-	return make_unique<AIModelAlienChase>(*this);
-}
-
 void AIModelAlienChase::Update(const Time& time)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	auto& rigidBody = GetRigidBody(objectId);
 	UpdateChaseVelocity(objectId, rigidBody, time);
 }
 
 
 AIModelAlienMothership::AIModelAlienMothership(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
 	auto& rigidBody = GetRigidBody(alien.objectId);
 	rigidBody.angularVelocity = (GetRandomFloat01() < 0.5f ? -1.0f : 1.0f) * 2.0f;
 	offspring.reserve(20);
-}
-
-std::unique_ptr<AIModel> AIModelAlienMothership::Clone() const
-{
-	return make_unique<AIModelAlienMothership>(*this);
 }
 
 void AIModelAlienMothership::Update(const Time& /*time*/)
@@ -379,13 +272,8 @@ ObjectId AIModelAlienMothership::LaunchOffspring(const GameObject& parent)
 
 
 AIModelAlienOffspring::AIModelAlienOffspring(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
-}
-
-std::unique_ptr<AIModel> AIModelAlienOffspring::Clone() const
-{
-	return make_unique<AIModelAlienOffspring>(*this);
 }
 
 TWEAKABLE(float, cohesionMagnitude, "Alien.Offspring.CohesionMagnitude", 1000.0f, 0.0f, 1000.0f);
@@ -397,6 +285,8 @@ TWEAKABLE(float, separationRadius, "Alien.Offspring.SeparationRadius", 30.0f, 0.
 
 void AIModelAlienOffspring::Update(const Time& time)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	auto& rigidBody = GetRigidBody(objectId);
 
 	// flocking parameters
@@ -521,13 +411,8 @@ void AIModelAlienOffspring::Update(const Time& time)
 
 
 AIModelAlienWallHugger::AIModelAlienWallHugger(GameObject& alien)
-	: AIModel(alien)
+	: objectId(alien.objectId)
 {
-}
-
-std::unique_ptr<AIModel> AIModelAlienWallHugger::Clone() const
-{
-	return make_unique<AIModelAlienWallHugger>(*this);
 }
 
 TWEAKABLE(float, wallHuggerSpeed, "Alien.WallHugger.Speed", 150.0f, 0.0f, 1000.0f);
@@ -535,6 +420,8 @@ TWEAKABLE(float, wallHuggerCrossingProbability, "Alien.WallHugger.CrossingProbab
 
 void AIModelAlienWallHugger::Update(const Time& /*time*/)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	auto& rigidBody = GetRigidBody(objectId);
 	Vector2 position = rigidBody.position;
 	Vector2 facing = rigidBody.facing;
@@ -587,5 +474,7 @@ void AIModelAlienWallHugger::Update(const Time& /*time*/)
 	rigidBody.position = position;
 	rigidBody.facing = facing;
 }
+
+
 
 

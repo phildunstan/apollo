@@ -14,7 +14,7 @@ TWEAKABLE(float, playerFireRate, "Player.FireRate", 4.0f, 0.0f, 10.0f); // shots
 
 
 int playerScore { 0 };
-
+float playerTimeOfLastShot { 0.0f };
 
 void ApplyPlayerInput(const Time& time, const PlayerInput& playerInput)
 {
@@ -49,10 +49,10 @@ void ApplyPlayerInput(const Time& time, const PlayerInput& playerInput)
 	//	playerRB.velocity = Vector2 { 0.0f, 0.0f };
 	//}
 
-	if (playerInput.firing && ((time.elapsedTime - player.timeOfLastShot) > 1.0f / playerFireRate))
+	if (playerInput.firing && ((time.elapsedTime - playerTimeOfLastShot) > 1.0f / playerFireRate))
 	{
 		FirePlayerBullet();
-		player.timeOfLastShot = time.elapsedTime;
+		playerTimeOfLastShot = time.elapsedTime;
 	}
 }
 

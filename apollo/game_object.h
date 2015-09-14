@@ -2,22 +2,11 @@
 
 #include <memory>
 #include <vector>
-#include "ai.h"
 
-ObjectId GetNextObjectId();
+#include "game.h"
+#include "math_helpers.h"
 
-enum class GameObjectType : int
-{
-	Player,
-	Bullet,
-	AlienRandom,
-	AlienChase,
-	AlienShy,
-	AlienMothership,
-	AlienOffspring,
-	AlienWallHugger,
-	Count
-};
+
 
 struct GameObject
 {
@@ -32,7 +21,6 @@ struct GameObject
 		: objectId { other.objectId }
 		, type { other.type }
 		, isAlive { other.isAlive }
-		, timeOfLastShot { other.timeOfLastShot }
 	{
 	}
 
@@ -41,15 +29,14 @@ struct GameObject
 		objectId = other.objectId;
 		type = other.type;
 		isAlive = other.isAlive;
-		timeOfLastShot = other.timeOfLastShot;
 		return *this;
 	}
 
-	ObjectId objectId { 0 };
+	ObjectId objectId { };
 	GameObjectType type { GameObjectType::Player };
 	bool isAlive { true };
-	float timeOfLastShot { 0.0f };
 };
+
 
 
 struct GameObjectMetaData

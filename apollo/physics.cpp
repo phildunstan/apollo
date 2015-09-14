@@ -25,16 +25,16 @@ void InitPhysics()
 RigidBody& GetRigidBody(ObjectId objectId)
 {
 	// we can use a binary search if we can guarantee that elements are never reordered.
-	auto rigidBodyIter = lower_bound(begin(rigidBodies), end(rigidBodies), objectId, [] (const auto& rigidBody, auto objectId) { return rigidBody.objectId < objectId; });
-	assert((rigidBodyIter != end(rigidBodies)) && (rigidBodyIter->objectId == objectId));
+	auto rigidBodyIter = lower_bound(begin(rigidBodies), end(rigidBodies), objectId, [] (const auto& rigidBody, auto objectId) { return GetIndex(rigidBody.objectId) < GetIndex(objectId); });
+	assert((rigidBodyIter != end(rigidBodies)) && (GetIndex(rigidBodyIter->objectId) == GetIndex(objectId)));
 	return *rigidBodyIter;
 }
 
 CollisionObject& GetCollisionObject(ObjectId objectId)
 {
 	// we can use a binary search if we can guarantee that elements are never reordered.
-	auto collisionObjectIter = lower_bound(begin(collisionObjects), end(collisionObjects), objectId, [] (const auto& collisionObjects, auto objectId) { return collisionObjects.objectId < objectId; });
-	assert((collisionObjectIter != end(collisionObjects)) && (collisionObjectIter->objectId == objectId));
+	auto collisionObjectIter = lower_bound(begin(collisionObjects), end(collisionObjects), objectId, [] (const auto& collisionObjects, auto objectId) { return GetIndex(collisionObjects.objectId) < GetIndex(objectId); });
+	assert((collisionObjectIter != end(collisionObjects)) && (GetIndex(collisionObjectIter->objectId) == GetIndex(objectId)));
 	return *collisionObjectIter;
 }
 
