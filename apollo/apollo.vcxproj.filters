@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="gl_helpers.cpp" />
-    <ClCompile Include="sdl_helpers.cpp" />
     <ClCompile Include="debug_draw.cpp" />
     <ClCompile Include="math_helpers.cpp" />
     <ClCompile Include="physics.cpp" />
@@ -20,7 +19,6 @@
   <ItemGroup>
     <ClInclude Include="scope_exit.h" />
     <ClInclude Include="gl_helpers.h" />
-    <ClInclude Include="sdl_helpers.h" />
     <ClInclude Include="math_helpers.h" />
     <ClInclude Include="debug_draw.h" />
     <ClInclude Include="physics.h" />

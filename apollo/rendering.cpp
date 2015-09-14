@@ -1,10 +1,10 @@
+#include <algorithm>
 #include <memory>
 #include <iostream>
 #include <fstream>
 
 #include "GL/glew.h"
 #include "SDL.h"
-#include "SDL_image.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -22,7 +22,6 @@
 
 #include "game.h"
 #include "gl_helpers.h"
-#include "sdl_helpers.h"
 #include "debug_draw.h"
 #include "math_helpers.h"
 #include "physics.h"

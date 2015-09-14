@@ -22,7 +22,6 @@
 #include "profiler.h"
 #include "scope_exit.h"
 #include "gl_helpers.h"
-#include "sdl_helpers.h"
 #include "math_helpers.h"
 #include "sprite.h"
 #include "debug_draw.h"

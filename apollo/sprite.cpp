@@ -6,11 +6,13 @@
 #include "glm/gtc/type_ptr.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "SDL.h"
-#include "SDL_image.h"
 
 #include "gl_helpers.h"
-#include "sdl_helpers.h"
+
 
 using namespace std;
 
@@ -18,10 +20,15 @@ Sprite CreateSprite(const std::string& spriteFilename)
 {
 	Sprite sprite;
 
-	unique_ptr<uint8_t[]> pixels;
 	int w = 0;
 	int h = 0;
-	tie(pixels, w, h) = std::async(LoadSDLTexture, spriteFilename.c_str()).get();
+	auto pixels = std::unique_ptr<uint8_t, void(*)(void*)>(stbi_load(spriteFilename.c_str(), &w, &h, 0, 4), stbi_image_free);
+	if (!pixels)
+	{
+		printf("Unable to load the image from %s\n", spriteFilename.c_str());
+		return sprite;
+	}
+
 	sprite.dimensions = Vector2(w, h);
 	glGenTextures(1, &sprite.texture);
 	glBindTexture(GL_TEXTURE_2D, sprite.texture);

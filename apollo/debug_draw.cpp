@@ -3,7 +3,6 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "Sprite.h"
-#include "sdl_helpers.h"
 #include "gl_helpers.h"
 #include "debug_draw.h"
 
