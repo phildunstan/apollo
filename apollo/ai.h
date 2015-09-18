@@ -10,7 +10,7 @@ struct GameObject;
 
 
 
-void CreateAI(GameObject& gameObject);
+void CreateAI(ObjectId objectId);
 
 void UpdateAI(const Time& time);
 
@@ -19,7 +19,7 @@ void UpdateAI(const Time& time);
 
 struct AIModelAlienRandom
 {
-	explicit AIModelAlienRandom(GameObject& alien);
+	explicit AIModelAlienRandom(ObjectId objectId);
 	void Update(const Time& time);
 
 	ObjectId objectId;
@@ -30,7 +30,7 @@ struct AIModelAlienRandom
 
 struct AIModelAlienShy
 {
-	explicit AIModelAlienShy(GameObject& alien);
+	explicit AIModelAlienShy(ObjectId objectId);
 	void Update(const Time& time);
 
 	ObjectId objectId;
@@ -40,7 +40,7 @@ struct AIModelAlienShy
 
 struct AIModelAlienChase
 {
-	explicit AIModelAlienChase(GameObject& alien);
+	explicit AIModelAlienChase(ObjectId objectId);
 	void Update(const Time& time);
 
 	ObjectId objectId;
@@ -49,9 +49,9 @@ struct AIModelAlienChase
 
 struct AIModelAlienMothership
 {
-	explicit AIModelAlienMothership(GameObject& alien);
+	explicit AIModelAlienMothership(ObjectId objectId);
 	void Update(const Time& time);
-	static ObjectId LaunchOffspring(const GameObject& parent);
+	ObjectId LaunchOffspring();
 
 	ObjectId objectId;
 	enum class LaunchingMode { Waiting, Launching };
@@ -62,7 +62,7 @@ struct AIModelAlienMothership
 
 struct AIModelAlienOffspring
 {
-	explicit AIModelAlienOffspring(GameObject& alien);
+	explicit AIModelAlienOffspring(ObjectId objectId);
 	void Update(const Time& time);
 
 	ObjectId objectId;
@@ -71,7 +71,7 @@ struct AIModelAlienOffspring
 
 struct AIModelAlienWallHugger
 {
-	explicit AIModelAlienWallHugger(GameObject& alien);
+	explicit AIModelAlienWallHugger(ObjectId objectId);
 	void Update(const Time& time);
 
 	ObjectId objectId;

@@ -88,7 +88,7 @@ GameObject& CreateAlien()
 	tie(position, facing) = findRandomPlaceToSpawnAlien();
 	CreateAlienPhysics(alien.objectId, position, facing);
 
-	CreateAI(alien);
+	CreateAI(alien.objectId);
 
 	return alien;
 }
@@ -216,7 +216,7 @@ GameObject& CreateAlien<GameObjectType::AlienWallHugger>()
 	Vector2 collisionBoundingBoxDimensions = metaData.boundingBoxDimensions;
 	tie(position, facing) = findRandomPlaceAlongWallToSpawnWallHugger(collisionBoundingBoxDimensions);
 	CreateAlienPhysics(alien.objectId, position, facing);
-	CreateAI(alien);
+	CreateAI(alien.objectId);
 
 	return alien;
 }
@@ -320,14 +320,16 @@ bool IsGameOver()
 }
 
 
-GameObject& CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask)
+GameObject CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask)
 {
 	bullets.push_back(GameObject::CreateGameObject<GameObjectType::Bullet>());
-	auto& rigidBody = AddRigidBody(bullets.back().objectId, position, glm::normalize(velocity));
+	ObjectId objectId = bullets.back().objectId;
+
+	auto& rigidBody = AddRigidBody(objectId, position, glm::normalize(velocity));
 	rigidBody.velocity = velocity;
 	//printf("Fire Bullet %llu at %f, %f with velocity %f, %f\n", rigidBody.objectId, rigidBody.bulletPosition.x, rigidBody.bulletPosition.y, rigidBody.velocity.x, rigidBody.velocity.y);
 
-	auto& collisionObject = AddCollisionObject(bullets.back().objectId, Vector2 { 2.0f, 12.0f });
+	auto& collisionObject = AddCollisionObject(objectId, Vector2 { 2.0f, 12.0f });
 	collisionObject.layer = collisionLayer;
 	collisionObject.layerMask = collisionMask;
 

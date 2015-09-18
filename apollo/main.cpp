@@ -135,7 +135,8 @@ int main(int /*argc*/, char** /*argv*/)
 	auto debugDrawCleanup = make_scope_exit([] () { DebugDrawShutdown(); });
 
 	bool renderDebugUI = false;
-	bool renderProfilerUI = false;
+	bool renderProfilerUI = true;
+	ProfilerRenderingMode renderProfilerMode = ProfilerRenderingMode::FrameTotals;
 
 	InitPhysics();
 	InitWorld();
@@ -170,6 +171,11 @@ int main(int /*argc*/, char** /*argv*/)
 					break;
 				case SDLK_F11:
 					renderProfilerUI = !renderProfilerUI;
+					if (renderProfilerUI)
+					{
+						// invert the rendering mode every time the profiler is enabled
+						renderProfilerMode = (renderProfilerMode == ProfilerRenderingMode::FrameThreads) ? ProfilerRenderingMode::FrameTotals : ProfilerRenderingMode::FrameThreads;
+					}
 					break;
 				case SDLK_LEFT:
 					currentSnapshotIndex = std::max(currentSnapshotIndex - 1, 0);
@@ -243,7 +249,7 @@ int main(int /*argc*/, char** /*argv*/)
 
 		if (renderProfilerUI)
 		{
-			RenderProfiler(time, windowWidth, windowHeight);
+			RenderProfiler(time, windowWidth, windowHeight, renderProfilerMode);
 		}
 
 		if (renderDebugUI)

@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <vector>
+#include <thread>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h> // Defines macros used by TraceLoggingProvider.h
@@ -29,18 +30,44 @@ TRACELOGGING_DECLARE_PROVIDER(ProfilerTraceLoggingProvider);
 using ProfilerTimeUnit = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using ProfilerDurationUnit = std::chrono::nanoseconds;
 
-
-struct ProfilerDataPoint
+struct ProfileEvent
 {
-	ProfilerDataPoint(const char* id_)
-		: id(id_)
-		, filename("")
-		, duration()
-		, line(0)
-		, hitCount(0)
+	enum class Type { Begin, End};
+
+	ProfileEvent(Type type_, const char* id_, const char* filename_, int line_)
+		: time(std::chrono::high_resolution_clock::now())
+		, id(id_)
+		, filename(filename_)
+		, type(type_)
+		, line(line_)
+		, threadId(std::this_thread::get_id())
 	{
 	}
 
+	ProfilerTimeUnit time;
+	const char* id;
+	const char* filename;
+	Type type : 1;
+	int line : 31;
+	std::thread::id threadId;
+};
+static_assert(sizeof(ProfileEvent) == 32, "sizeof(ProfileEvent) == 32");
+
+extern std::vector<ProfileEvent> profileEvents;
+
+inline void ProfilerAddBeginEvent(const char* id, const char* filename, int line)
+{
+	profileEvents.emplace_back(ProfileEvent::Type::Begin, id, filename, line);
+}
+
+inline void ProfilerAddEndEvent(const char* id, const char* filename, int line)
+{
+	profileEvents.emplace_back(ProfileEvent::Type::End, id, filename, line);
+}
+
+
+struct ProfilerDataPoint
+{
 	ProfilerDataPoint(const char* id_, const char* filename_, int line_, ProfilerDurationUnit duration_, int hitCount_)
 		: id(id_)
 		, filename(filename_)
@@ -56,6 +83,7 @@ struct ProfilerDataPoint
 	int line;
 	int hitCount;
 };
+static_assert(sizeof(ProfilerDataPoint) == 32, "sizeof(ProfilerDataPoint) == 32");
 
 extern std::vector<ProfilerDataPoint> profileData;
 
@@ -83,6 +111,7 @@ struct ProfilerTimer
 		, line { line_ }
 		, startTime { std::chrono::high_resolution_clock::now() }
 	{
+		ProfilerAddBeginEvent(id, filename, line);
 	}
 
 	~ProfilerTimer()
@@ -92,6 +121,7 @@ struct ProfilerTimer
 
 	void end()
 	{
+		ProfilerAddEndEvent(id, filename, line);
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - startTime;
 		ProfilerAdd(id, filename, line, duration, 1);

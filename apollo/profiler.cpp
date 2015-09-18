@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <unordered_map>
 
@@ -13,10 +14,12 @@ TRACELOGGING_DEFINE_PROVIDER(
 
 using namespace std;
 
+vector<ProfileEvent> profileEvents;
 vector<ProfilerDataPoint> profileData;
 
 void ProfilerInit()
 {
+	profileEvents.reserve(20000);
 	profileData.reserve(10000);
 
 	// Register the windows Trace Logging provider
@@ -31,6 +34,7 @@ void ProfilerShutdown()
 
 void ProfilerBeginFrame()
 {
+	profileEvents.clear();
 	profileData.clear();
 }
 
@@ -65,7 +69,49 @@ void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& 
 	index.clear();
 
 	// reserve the 0th statistics for the total frame time
-	currentFrameStatistics.emplace_back("total frame time");
+	currentFrameStatistics.emplace_back("total frame time", "", 0, ProfilerDurationUnit {0}, 1);
+
+	static vector<ProfileEvent> activeEvents;
+	activeEvents.clear();
+
+#if 1
+	for (const auto& event : profileEvents)
+	{
+		if (event.type == ProfileEvent::Type::Begin)
+		{
+			activeEvents.push_back(event);
+		}
+		else 
+		{
+			const char* eventId = event.id;
+			auto beginEventIter = find_if(begin(activeEvents), end(activeEvents), [eventId] (const ProfileEvent& e) { return e.id == eventId; });
+			assert(beginEventIter != end(activeEvents));
+
+			const auto& beginEvent = *beginEventIter;
+			const auto& endEvent = event;
+			assert(beginEvent.id == endEvent.id);
+			assert(beginEvent.filename == endEvent.filename);
+			assert(beginEvent.line == endEvent.line);
+			assert(beginEvent.threadId == endEvent.threadId);
+			auto duration = endEvent.time - beginEvent.time;
+			int hitCount = 1;
+
+			auto key = DataPointKey { endEvent.filename, endEvent.line };
+			auto indexEntryIter = index.find(key);
+			if (indexEntryIter == index.end())
+			{
+				index[key] = currentFrameStatistics.size();
+				currentFrameStatistics.emplace_back(endEvent.id, endEvent.filename, endEvent.line, duration, hitCount);
+			}
+			else
+			{
+				auto& blockStatistics = currentFrameStatistics[indexEntryIter->second];
+				blockStatistics.duration += duration;
+				++blockStatistics.hitCount += hitCount;
+			}
+		}
+	};
+#else
 
 	for (const auto& dataPoint : profileData)
 	{
@@ -75,7 +121,6 @@ void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& 
 		{
 			index[key] = currentFrameStatistics.size();
 			currentFrameStatistics.push_back(dataPoint);
-
 		}
 		else
 		{
@@ -86,13 +131,13 @@ void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& 
 			blockStastistics.duration += dataPoint.duration;
 			blockStastistics.hitCount += dataPoint.hitCount;
 		}
-
-		if (strcmp(dataPoint.id, "main_loop") == 0)
-		{
-			currentFrameStatistics[0].duration = currentFrameStatistics[index[key]].duration;
-			currentFrameStatistics[0].hitCount = 1;
-		}
 	}
+#endif
+
+	auto mainLoopDataIter = find_if(cbegin(currentFrameStatistics), cend(currentFrameStatistics), [] (const ProfilerDataPoint& dataPoint) { return strcmp(dataPoint.id, "main_loop") == 0; });
+	assert(mainLoopDataIter != cend(currentFrameStatistics));
+	currentFrameStatistics[0].duration = mainLoopDataIter->duration;
+	currentFrameStatistics[0].hitCount = 1;
 }
 
 

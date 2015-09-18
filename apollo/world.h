@@ -25,7 +25,7 @@ void InitWorld();
 void UpdateWorld(const Time& time);
 bool IsGameOver();
 
-GameObject& CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask);
+GameObject CreateBullet(const Vector2& position, const Vector2& velocity, CollisionLayer collisionLayer, CollisionLayer collisionMask);
 void FirePlayerBullet();
 
 template <GameObjectType GameObjectTypeT>

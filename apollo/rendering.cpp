@@ -2,6 +2,7 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 #include "GL/glew.h"
 #include "SDL.h"
@@ -306,7 +307,7 @@ void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight
 
 
 
-void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight)
+void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight, ProfilerRenderingMode renderingMode)
 {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -333,23 +334,80 @@ void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight)
 		}
 	}
 
-	// 200px high = 1/30s
-	float graphHeight = 200.0f;
-	float performanceGraphScale = graphHeight * 1e-6f / 30.0f; // scale in pixels per ns
-
-	DebugDrawLine(Vector2 { -windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Vector2 { windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Color::Red);
-
-	float graphBarWidth = 20.0f;
-	int graphHistorySize = windowWidth / static_cast<int>(graphBarWidth);
-	int numBars = min(graphHistorySize, static_cast<int>(accumulatedStatistics.size()));
-	for (size_t i = 0; i < numBars; ++i)
+	if (renderingMode == ProfilerRenderingMode::FrameTotals)
 	{
-		const auto& frameStatistics = accumulatedStatistics[accumulatedStatistics.size() - numBars + i];
-		float frameTime = static_cast<float>(frameStatistics[0].duration.count());
-		float x = i * graphBarWidth - windowWidth / 2.0f;
-		float y = -windowHeight / 2.0f;
-		float w = graphBarWidth;
-		float h = performanceGraphScale * frameTime;
-		DebugDrawBox2d(Vector2 { x, y }, Vector2 { x + w, y + h }, Color::Cyan);
+		// 200px high = 1/30s
+		float graphHeight = 200.0f;
+		float performanceGraphScale = graphHeight * 1e-6f / 30.0f; // scale in pixels per ns
+
+		DebugDrawLine(Vector2 { -windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Vector2 { windowWidth / 2.0f, graphHeight - windowHeight / 2.0f }, Color::Red);
+
+		float graphBarWidth = 20.0f;
+		int graphHistorySize = windowWidth / static_cast<int>(graphBarWidth);
+		int numBars = min(graphHistorySize, static_cast<int>(accumulatedStatistics.size()));
+		for (size_t i = 0; i < numBars; ++i)
+		{
+			const auto& frameStatistics = accumulatedStatistics[accumulatedStatistics.size() - numBars + i];
+			float frameTime = static_cast<float>(frameStatistics[0].duration.count());
+			float x = i * graphBarWidth - windowWidth / 2.0f;
+			float y = -windowHeight / 2.0f;
+			float w = graphBarWidth;
+			float h = performanceGraphScale * frameTime;
+			DebugDrawBox2d(Vector2 { x, y }, Vector2 { x + w, y + h }, Color::Cyan);
+		}
+	}
+	else
+	{
+		float graphMinX = -windowWidth / 2.0f;
+		float graphMaxY = -200;
+		float barHeight = 10.0f;
+		float performanceGraphScale = windowWidth * 1e-6f / 30.0f; // scale in pixels per ns
+
+		assert(profileEvents.size() > 0);
+		ProfilerTimeUnit frameStartTime = profileEvents[0].time;
+
+		vector<thread::id> threadRows;
+		vector<ProfileEvent> activeEvents;
+		for (const auto& event : profileEvents)
+		{
+			if (event.type == ProfileEvent::Type::Begin)
+			{
+				activeEvents.push_back(event);
+			}
+			else
+			{
+				const char* eventId = event.id;
+				auto beginEventIter = find_if(begin(activeEvents), end(activeEvents), [eventId] (const ProfileEvent& e) { return e.id == eventId; });
+				assert(beginEventIter != end(activeEvents));
+
+				const auto& beginEvent = *beginEventIter;
+				const auto& endEvent = event;
+				assert(beginEvent.id == endEvent.id);
+				assert(beginEvent.filename == endEvent.filename);
+				assert(beginEvent.line == endEvent.line);
+				assert(beginEvent.threadId == endEvent.threadId);
+
+				auto rowIter = find(cbegin(threadRows), cend(threadRows), endEvent.threadId);
+				size_t rowIndex = 0;
+				if (rowIter == cend(threadRows))
+				{
+					threadRows.push_back(endEvent.threadId);
+					rowIndex = threadRows.size();
+				}
+				else
+				{
+					rowIndex = distance(cbegin(threadRows), rowIter);
+				}
+
+				auto relativeStartTime = static_cast<float>((beginEvent.time - frameStartTime).count());
+				auto duration = static_cast<float>((endEvent.time - beginEvent.time).count());
+
+				float x = graphMinX + performanceGraphScale * relativeStartTime;
+				float y = graphMaxY - rowIndex * barHeight * 1.2f;
+				float w = performanceGraphScale * duration;
+				float h = barHeight;
+				DebugDrawBox2d(Vector2 { x, y }, Vector2 { x + w, y + h }, Color::Cyan);
+			}
+		}
 	}
 }
