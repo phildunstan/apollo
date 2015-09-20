@@ -16,10 +16,10 @@ TRACELOGGING_DECLARE_PROVIDER(ProfilerTraceLoggingProvider);
 
 #define PROFILER_BEGIN_FRAME() ProfilerBeginFrame()
 
-#define PROFILER_TIMER_FUNCTION() ProfilerTimer timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__); \
+#define PROFILER_TIMER_FUNCTION() ProfilerBlock timer##__COUNTER__(__FUNCTION__, __FILE__, __LINE__); \
 	TraceLoggingFunction(ProfilerTraceLoggingProvider)
 
-#define PROFILER_TIMER_BEGIN(ID) ProfilerTimer timer##ID(#ID, __FILE__, __LINE__); \
+#define PROFILER_TIMER_BEGIN(ID) ProfilerBlock timer##ID(#ID, __FILE__, __LINE__); \
 	TraceLoggingActivity<ProfilerTraceLoggingProvider> traceLoggingActivity; \
 	TraceLoggingWriteStart(traceLoggingActivity, #ID)
 
@@ -29,6 +29,12 @@ TRACELOGGING_DECLARE_PROVIDER(ProfilerTraceLoggingProvider);
 
 using ProfilerTimeUnit = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using ProfilerDurationUnit = std::chrono::nanoseconds;
+
+
+void ProfilerInit();
+void ProfilerBeginFrame();
+void ProfilerShutdown();
+
 
 struct ProfileEvent
 {
@@ -66,9 +72,9 @@ inline void ProfilerAddEndEvent(const char* id, const char* filename, int line)
 }
 
 
-struct ProfilerDataPoint
+struct ProfilerBlockStatistics
 {
-	ProfilerDataPoint(const char* id_, const char* filename_, int line_, ProfilerDurationUnit duration_, int hitCount_)
+	ProfilerBlockStatistics(const char* id_, const char* filename_, int line_, ProfilerDurationUnit duration_, int hitCount_)
 		: id(id_)
 		, filename(filename_)
 		, duration(duration_)
@@ -83,38 +89,23 @@ struct ProfilerDataPoint
 	int line;
 	int hitCount;
 };
-static_assert(sizeof(ProfilerDataPoint) == 32, "sizeof(ProfilerDataPoint) == 32");
+static_assert(sizeof(ProfilerBlockStatistics) == 32, "sizeof(ProfilerDataPoint) == 32");
 
-extern std::vector<ProfilerDataPoint> profileData;
-
-
-void ProfilerInit();
-void ProfilerShutdown();
-
-inline void ProfilerAdd(const char* id, const char* filename, int line, ProfilerDurationUnit duration, int hitCount)
-{
-	profileData.emplace_back(id, filename, line, duration, hitCount);
-}
-
-void ProfilerBeginFrame();
-
-
-using ProfilerFrameStatistics = std::vector<ProfilerDataPoint>;
+using ProfilerFrameStatistics = std::vector<ProfilerBlockStatistics>;
 const std::vector<ProfilerFrameStatistics>& ProfilerGetAccumulatedStatistics();
 
 
-struct ProfilerTimer
+struct ProfilerBlock
 {
-	ProfilerTimer(const char* id_, const char* filename_, int line_)
+	ProfilerBlock(const char* id_, const char* filename_, int line_)
 		: id { id_ }
 		, filename { filename_ }
 		, line { line_ }
-		, startTime { std::chrono::high_resolution_clock::now() }
 	{
 		ProfilerAddBeginEvent(id, filename, line);
 	}
 
-	~ProfilerTimer()
+	~ProfilerBlock()
 	{
 		end();
 	}
@@ -122,13 +113,9 @@ struct ProfilerTimer
 	void end()
 	{
 		ProfilerAddEndEvent(id, filename, line);
-		auto now = std::chrono::high_resolution_clock::now();
-		auto duration = now - startTime;
-		ProfilerAdd(id, filename, line, duration, 1);
 	}
 
-	const char* id;
-	const char* filename;
-	int line;
-	ProfilerTimeUnit startTime;
+	const char* const id;
+	const char* const filename;
+	const int line;
 };

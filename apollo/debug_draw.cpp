@@ -2,27 +2,37 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Sprite.h"
-#include "gl_helpers.h"
 #include "debug_draw.h"
+#include "gl_helpers.h"
+#include "profiler.h"
+#include "sprite.h"
 
 using namespace std;
 
-static GLProgram shaderProgram;
-static Sprite lineSprite;
-
-struct Line
-{
-	Vector2 begin;
-	Vector2 end;
-	Color color;
-};
-
-static vector<Line> lines;
-
-
 namespace
 {
+	struct DebugDrawShader
+	{
+		GLProgram program {};
+		GLint texUniform;
+		GLint modelviewUniform;
+		GLint projectionUniform;
+		GLint colorUniform;
+	};
+
+	static DebugDrawShader debugDrawShader;
+	static Sprite lineSprite;
+
+	struct Line
+	{
+		Vector2 begin;
+		Vector2 end;
+		Color color;
+	};
+
+	static vector<Line> lines;
+
+
 	glm::mat4 CreateDebugDrawSpriteModelviewMatrix(const Sprite& sprite, const Vector2& position, const Vector2& facing)
 	{
 		auto y = glm::vec3 { facing / sprite.dimensions.y, 0.0f };
@@ -37,7 +47,7 @@ namespace
 		return CreateDebugDrawSpriteModelviewMatrix(sprite, position + facing / 2.0f, facing);
 	}
 
-	void DrawDebugDrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix, Color color)
+	void DrawDebugDrawSprite(const Sprite& sprite, const DebugDrawShader& shader, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix, Color color)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, sprite.vertexBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.indexBuffer);
@@ -50,42 +60,14 @@ namespace
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, sprite.texture);
-		auto texUniform = glGetUniformLocation(program, "s_texture");
-		if (texUniform == -1)
-		{
-			printf("Unable to find uniform s_texture in player shader.\n");
-			CheckOpenGLErrors();
-		}
-		glUniform1i(texUniform, 0);
-
-		auto modelviewUniform = glGetUniformLocation(program, "u_modelview");
-		if (modelviewUniform == -1)
-		{
-			printf("Unable to find uniform u_modelview in player shader.\n");
-			CheckOpenGLErrors();
-		}
-		glUniformMatrix4fv(modelviewUniform, 1, GL_FALSE, glm::value_ptr(modelviewMatrix));
-
-		auto projectionUniform = glGetUniformLocation(program, "u_projection");
-		if (projectionUniform == -1)
-		{
-			printf("Unable to find uniform u_projection in player shader.\n");
-			CheckOpenGLErrors();
-		}
-		glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-		auto colorUniform = glGetUniformLocation(program, "u_color");
-		if (colorUniform == -1)
-		{
-			printf("Unable to find uniform u_color in debug draw shader.\n");
-			CheckOpenGLErrors();
-		}
+		glUniform1i(shader.texUniform, 0);
+		glUniformMatrix4fv(shader.modelviewUniform, 1, GL_FALSE, glm::value_ptr(modelviewMatrix));
+		glUniformMatrix4fv(shader.projectionUniform, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 		float r = static_cast<float>((static_cast<unsigned int>(color) & 0xff000000) >> 24) / 255.0f;
 		float g = static_cast<float>((static_cast<unsigned int>(color) & 0x00ff0000) >> 16) / 255.0f;
 		float b = static_cast<float>((static_cast<unsigned int>(color) & 0x0000ff00) >> 8) / 255.0f;
 		float a = static_cast<float>((static_cast<unsigned int>(color) & 0x000000ff)) / 255.0f;
-		glUniform4f(colorUniform, r, g, b, a);
-		CheckOpenGLErrors();
+		glUniform4f(shader.colorUniform, r, g, b, a);
 
 		glDrawElements(GL_TRIANGLES, sprite.indexCount, GL_UNSIGNED_SHORT, 0);
 
@@ -100,8 +82,38 @@ namespace
 
 void DebugDrawInit()
 {
-	shaderProgram = LoadShaders("debug_vs.glsl", "debug_fs.glsl");
+	debugDrawShader.program = LoadShaders("debug_vs.glsl", "debug_fs.glsl");
+
+	debugDrawShader.texUniform = glGetUniformLocation(debugDrawShader.program, "s_texture");
+	if (debugDrawShader.texUniform == -1)
+	{
+		printf("Unable to find uniform s_texture in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	debugDrawShader.modelviewUniform = glGetUniformLocation(debugDrawShader.program, "u_modelview");
+	if (debugDrawShader.modelviewUniform == -1)
+	{
+		printf("Unable to find uniform u_modelview in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	debugDrawShader.projectionUniform = glGetUniformLocation(debugDrawShader.program, "u_projection");
+	if (debugDrawShader.projectionUniform == -1)
+	{
+		printf("Unable to find uniform u_projection in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	debugDrawShader.colorUniform = glGetUniformLocation(debugDrawShader.program, "u_color");
+	if (debugDrawShader.colorUniform == -1)
+	{
+		printf("Unable to find uniform u_color in debug draw shader.\n");
+		CheckOpenGLErrors();
+	}
+
 	lineSprite = CreateSprite("debug_line.png");
+	CheckOpenGLErrors();
 }
 
 void DebugDrawShutdown()
@@ -146,9 +158,13 @@ void DebugDrawBox2d(const Vector2& min, const Vector2& max, Color color)
 	DebugDrawLine(d, a, color);
 }
 
-void DebugDrawRender(const glm::mat4& projectionMatrix)
+void DebugDrawRender(const Time& /*time*/, int windowWidth, int windowHeight)
 {
-	glUseProgram(shaderProgram);
+	PROFILER_TIMER_FUNCTION();
+
+	glUseProgram(debugDrawShader.program);
+
+	auto projectionMatrix = glm::ortho(-windowWidth / 2.0f, windowWidth / 2.0f, -windowHeight / 2.0f, windowHeight / 2.0f, -10.0f, 10.0f);
 
 	for (const auto& line : lines)
 	{
@@ -157,9 +173,11 @@ void DebugDrawRender(const glm::mat4& projectionMatrix)
 			continue;
 
 		auto modelviewMatrix = CreateDebugDrawSpriteBottomLeftModelviewMatrix(lineSprite, line.begin, line.end - line.begin);
-		DrawDebugDrawSprite(lineSprite, shaderProgram, modelviewMatrix, projectionMatrix, line.color);
+		DrawDebugDrawSprite(lineSprite, debugDrawShader, modelviewMatrix, projectionMatrix, line.color);
 	}
 	lines.clear();
 
 	glUseProgram(0);
+
+	CheckOpenGLErrors();
 }

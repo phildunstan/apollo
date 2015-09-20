@@ -109,6 +109,7 @@ int GetSnapshotCount()
 void ValidateSnapshot(int snapshotIndex, Time frameTime, uint64_t frameSeed)
 {
 	PROFILER_TIMER_FUNCTION();
+
 	assert((snapshotIndex >= 0) && (snapshotIndex < snapshots.size()));
 	const auto& snapshot = snapshots[snapshotIndex];
 

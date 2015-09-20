@@ -15,12 +15,10 @@ TRACELOGGING_DEFINE_PROVIDER(
 using namespace std;
 
 vector<ProfileEvent> profileEvents;
-vector<ProfilerDataPoint> profileData;
 
 void ProfilerInit()
 {
 	profileEvents.reserve(20000);
-	profileData.reserve(10000);
 
 	// Register the windows Trace Logging provider
 	TraceLoggingRegister(ProfilerTraceLoggingProvider);
@@ -35,7 +33,6 @@ void ProfilerShutdown()
 void ProfilerBeginFrame()
 {
 	profileEvents.clear();
-	profileData.clear();
 }
 
 struct DataPointKey
@@ -61,6 +58,8 @@ struct hash<DataPointKey>
 
 void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& accumulatedStatistics)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	accumulatedStatistics.emplace_back();
 	ProfilerFrameStatistics& currentFrameStatistics = accumulatedStatistics.back();
 	currentFrameStatistics.clear();
@@ -74,7 +73,6 @@ void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& 
 	static vector<ProfileEvent> activeEvents;
 	activeEvents.clear();
 
-#if 1
 	for (const auto& event : profileEvents)
 	{
 		if (event.type == ProfileEvent::Type::Begin)
@@ -109,32 +107,12 @@ void ProfilerAppendCurrentFrameStatistics(std::vector<ProfilerFrameStatistics>& 
 				blockStatistics.duration += duration;
 				++blockStatistics.hitCount += hitCount;
 			}
+
+			activeEvents.erase(beginEventIter);
 		}
 	};
-#else
 
-	for (const auto& dataPoint : profileData)
-	{
-		auto key = DataPointKey { dataPoint.filename, dataPoint.line };
-		auto indexEntryIter = index.find(key);
-		if (indexEntryIter == index.end())
-		{
-			index[key] = currentFrameStatistics.size();
-			currentFrameStatistics.push_back(dataPoint);
-		}
-		else
-		{
-			auto& blockStastistics = currentFrameStatistics[indexEntryIter->second];
-			assert(blockStastistics.filename == dataPoint.filename);
-			assert(blockStastistics.line == dataPoint.line);
-			assert(blockStastistics.id == dataPoint.id);
-			blockStastistics.duration += dataPoint.duration;
-			blockStastistics.hitCount += dataPoint.hitCount;
-		}
-	}
-#endif
-
-	auto mainLoopDataIter = find_if(cbegin(currentFrameStatistics), cend(currentFrameStatistics), [] (const ProfilerDataPoint& dataPoint) { return strcmp(dataPoint.id, "main_loop") == 0; });
+	auto mainLoopDataIter = find_if(cbegin(currentFrameStatistics), cend(currentFrameStatistics), [] (const ProfilerBlockStatistics& dataPoint) { return strcmp(dataPoint.id, "main_loop") == 0; });
 	assert(mainLoopDataIter != cend(currentFrameStatistics));
 	currentFrameStatistics[0].duration = mainLoopDataIter->duration;
 	currentFrameStatistics[0].hitCount = 1;

@@ -16,6 +16,37 @@
 
 using namespace std;
 
+
+SpriteShader CreateSpriteShader(const std::string& vertexShaderFilename, const std::string& pixelShaderFilename)
+{
+	SpriteShader spriteShader;
+	spriteShader.program = LoadShaders(vertexShaderFilename, pixelShaderFilename);
+
+	spriteShader.texUniform = glGetUniformLocation(spriteShader.program, "s_texture");
+	if (spriteShader.texUniform == -1)
+	{
+		printf("Unable to find uniform s_texture in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	spriteShader.modelviewUniform = glGetUniformLocation(spriteShader.program, "u_modelview");
+	if (spriteShader.modelviewUniform == -1)
+	{
+		printf("Unable to find uniform u_modelview in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	spriteShader.projectionUniform = glGetUniformLocation(spriteShader.program, "u_projection");
+	if (spriteShader.projectionUniform == -1)
+	{
+		printf("Unable to find uniform u_projection in player shader.\n");
+		CheckOpenGLErrors();
+	}
+
+	return spriteShader;
+}
+
+
 Sprite CreateSprite(const std::string& spriteFilename)
 {
 	Sprite sprite;
@@ -80,7 +111,7 @@ Sprite CreateSprite(const std::string& spriteFilename)
 }
 
 
-void DrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix)
+void DrawSprite(const Sprite& sprite, const SpriteShader& spriteShader, const glm::mat4& modelviewMatrix, const glm::mat4& projectionMatrix)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, sprite.vertexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sprite.indexBuffer);
@@ -93,29 +124,9 @@ void DrawSprite(const Sprite& sprite, const GLProgram& program, const glm::mat4&
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, sprite.texture);
-	auto texUniform = glGetUniformLocation(program, "s_texture");
-	if (texUniform == -1)
-	{
-		printf("Unable to find uniform s_texture in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniform1i(texUniform, 0);
-
-	auto modelviewUniform = glGetUniformLocation(program, "u_modelview");
-	if (modelviewUniform == -1)
-	{
-		printf("Unable to find uniform u_modelview in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniformMatrix4fv(modelviewUniform, 1, GL_FALSE, glm::value_ptr(modelviewMatrix));
-
-	auto projectionUniform = glGetUniformLocation(program, "u_projection");
-	if (projectionUniform == -1)
-	{
-		printf("Unable to find uniform u_projection in player shader.\n");
-		CheckOpenGLErrors();
-	}
-	glUniformMatrix4fv(projectionUniform, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniform1i(spriteShader.texUniform, 0);
+	glUniformMatrix4fv(spriteShader.modelviewUniform, 1, GL_FALSE, glm::value_ptr(modelviewMatrix));
+	glUniformMatrix4fv(spriteShader.projectionUniform, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
 	glDrawElements(GL_TRIANGLES, sprite.indexCount, GL_UNSIGNED_SHORT, 0);
 

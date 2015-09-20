@@ -41,7 +41,7 @@ TWEAKABLE(bool, renderDeadObjects, "Physics.RenderDeadObjects", false, false, tr
 unique_ptr<struct FONScontext, decltype(&glfonsDelete)> fontStash { 0, glfonsDelete };
 int fontNormal;
 
-GLProgram spriteShaderProgram;
+SpriteShader spriteShader;
 
 struct RenderModel
 {
@@ -78,8 +78,8 @@ bool LoadResources()
 	fontStash = unique_ptr<struct FONScontext, decltype(&glfonsDelete)> { glfonsCreate(512, 512, FONS_ZERO_TOPLEFT), glfonsDelete };
 	fontNormal = fonsAddFont(fontStash.get(), "sans", "Hack-Regular.ttf");
 
-	spriteShaderProgram = LoadShaders("sprite_vs.glsl", "sprite_fs.glsl");
-	if (spriteShaderProgram == 0)
+	spriteShader = CreateSpriteShader("sprite_vs.glsl", "sprite_fs.glsl");
+	if (!spriteShader.program)
 		return false;
 
 	renderModels.reserve(10);
@@ -106,7 +106,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUseProgram(spriteShaderProgram);
+	glUseProgram(spriteShader.program);
 
 	auto projectionMatrix = glm::ortho(-windowWidth / 2.0f, windowWidth / 2.0f, -windowHeight / 2.0f, windowHeight / 2.0f, -10.0f, 10.0f);
 
@@ -124,7 +124,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 			auto& bulletRB = GetRigidBody(bullet.objectId);
 			const auto& renderModel = GetRenderModel(GetType(bullet.objectId));
 			auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, bulletRB.position, bulletRB.facing);
-			DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+			DrawSprite(renderModel.sprite, spriteShader, modelviewMatrix, projectionMatrix);
 		}
 	});
 
@@ -136,7 +136,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 			auto& enemyRB = GetRigidBody(enemy.objectId);
 			const auto& renderModel = GetRenderModel(GetType(enemy.objectId));
 			auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, enemyRB.position, enemyRB.facing);
-			DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+			DrawSprite(renderModel.sprite, spriteShader, modelviewMatrix, projectionMatrix);
 		}
 	});
 
@@ -145,7 +145,7 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 		auto& playerRB = GetRigidBody(player.objectId);
 		const auto& renderModel = GetRenderModel(GetType(player.objectId));
 		auto modelviewMatrix = CreateSpriteModelviewMatrix(renderModel.sprite, playerRB.position, playerRB.facing);
-		DrawSprite(renderModel.sprite, spriteShaderProgram, modelviewMatrix, projectionMatrix);
+		DrawSprite(renderModel.sprite, spriteShader, modelviewMatrix, projectionMatrix);
 	}
 
 	// draw the collision world
@@ -164,8 +164,6 @@ void RenderWorld(const Time& /*time*/, int windowWidth, int windowHeight)
 			}
 		});
 	}
-
-	DebugDrawRender(projectionMatrix);
 
 	CheckOpenGLErrors();
 }
@@ -309,6 +307,8 @@ void RenderDebugUI(const Time& /*time*/, int /*windowWidth*/, int /*windowHeight
 
 void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight, ProfilerRenderingMode renderingMode)
 {
+	PROFILER_TIMER_FUNCTION();
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
@@ -407,6 +407,8 @@ void RenderProfiler(const Time& /*time*/, int windowWidth, int windowHeight, Pro
 				float w = performanceGraphScale * duration;
 				float h = barHeight;
 				DebugDrawBox2d(Vector2 { x, y }, Vector2 { x + w, y + h }, Color::Cyan);
+
+				activeEvents.erase(beginEventIter);
 			}
 		}
 	}

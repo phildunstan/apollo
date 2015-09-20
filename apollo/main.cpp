@@ -238,8 +238,9 @@ int main(int /*argc*/, char** /*argv*/)
 
 		RenderWorld(time, windowWidth, windowHeight);
 		RenderUI(time, windowWidth, windowHeight);
-
 		PROFILER_TIMER_END(main_loop);
+
+		DebugDrawRender(time, windowWidth, windowHeight);
 
 		if (updateMode == GameUpdateMode::Play)
 		{

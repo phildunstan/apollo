@@ -97,6 +97,7 @@ GLProgram LoadShaders(const std::string & vertexShaderFilename, const std::strin
 
 bool CheckOpenGLErrors()
 {
+#if defined(DEBUG)
 	bool errorExists = false;
 	auto glError = glGetError();
 	while (glError != GL_NO_ERROR)
@@ -105,6 +106,9 @@ bool CheckOpenGLErrors()
 		errorExists = true;
 	}
 	return !errorExists;
+#else
+	return true;
+#endif
 }
 
 
